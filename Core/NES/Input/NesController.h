@@ -127,21 +127,29 @@ public:
 
 	void InternalDrawController(InputHud& hud) override
 	{
-		hud.DrawOutline(35, 14);
+		hud.DrawOutline(38, 13, 25, 6);
 
-		hud.DrawButton(5, 3, 3, 3, IsPressed(Buttons::Up));
-		hud.DrawButton(5, 9, 3, 3, IsPressed(Buttons::Down));
-		hud.DrawButton(2, 6, 3, 3, IsPressed(Buttons::Left));
-		hud.DrawButton(8, 6, 3, 3, IsPressed(Buttons::Right));
-		hud.DrawButton(5, 6, 3, 3, false);
+		hud.DrawButton(5, 2, 3, 3, IsPressed(Buttons::Up));
+		hud.DrawButton(5, 8, 3, 3, IsPressed(Buttons::Down));
+		hud.DrawButton(2, 5, 3, 3, IsPressed(Buttons::Left));
+		hud.DrawButton(8, 5, 3, 3, IsPressed(Buttons::Right));
+		hud.DrawButton(5, 5, 3, 3, false);
 
-		hud.DrawButton(30, 7, 3, 3, IsPressed(Buttons::A));
-		hud.DrawButton(25, 7, 3, 3, IsPressed(Buttons::B));
+		hud.DrawButton(33, 6, 2, 4, IsPressed(Buttons::A));
+		hud.DrawButton(32, 7, 4, 2, IsPressed(Buttons::A));
+		hud.DrawButton(28, 6, 2, 4, IsPressed(Buttons::B));
+		hud.DrawButton(27, 7, 4, 2, IsPressed(Buttons::B));
 
-		hud.DrawButton(13, 9, 4, 2, IsPressed(Buttons::Select));
-		hud.DrawButton(18, 9, 4, 2, IsPressed(Buttons::Start));
+		hud.DrawButton(15, 8, 4, 2, IsPressed(Buttons::Select));
+		hud.DrawButton(20, 8, 4, 2, IsPressed(Buttons::Start));
 
-		hud.DrawNumber(hud.GetControllerIndex() + 1, 16, 2);
+		uint32_t fc = _emu->GetFrameCount() % 100000;
+		hud.DrawNumber(fc % 10, 34, 0);
+		hud.DrawNumber(fc / 10 % 10, 29, 0);
+		hud.DrawNumber(fc / 100 % 10, 24, 0);
+		hud.DrawNumber(fc / 1000 % 10, 19, 0);
+		hud.DrawNumber(fc / 10000 % 10, 14, 0);
+
 	}
 
 	vector<DeviceButtonName> GetKeyNameAssociations() override

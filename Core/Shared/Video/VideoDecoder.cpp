@@ -180,9 +180,7 @@ void VideoDecoder::WaitForAsyncFrameDecode()
 
 void VideoDecoder::UpdateFrame(RenderedFrame frame, bool sync, bool forRewind)
 {
-	if(_emu->IsRunAheadFrame()) {
-		return;
-	}
+
 
 	if(_frameChanged) {
 		//Last frame isn't done decoding yet - sometimes Signal() introduces a 25-30ms delay

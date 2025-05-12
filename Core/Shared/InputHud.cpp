@@ -5,8 +5,14 @@
 #include "Shared/BaseControlDevice.h"
 #include "Shared/EmuSettings.h"
 #include "Shared/Video/DebugHud.h"
+#include "Shared/Video/VideoDecoder.h"
+#include "Shared/Movies/MovieManager.h"
+#include "Shared/CheatManager.h"
+#include "Shared/HistoryViewer.h"
 
-static constexpr int color[2] = { 0x00111111, 0x00FFFFFF };
+static constexpr int colors[3] = { 0x00111111, 0x00117111, 0x00711111 };
+static int bgColor = 0x00A9A9A9;
+int prevLagCount = 0;
 
 InputHud::InputHud(Emulator* emu, DebugHud* hud)
 {
@@ -16,64 +22,73 @@ InputHud::InputHud(Emulator* emu, DebugHud* hud)
 
 void InputHud::DrawButton(int x, int y, int width, int height, bool pressed)
 {
-	_hud->DrawRectangle(_xOffset + x, _yOffset + y, width, height, color[pressed], true, 1);
+	//FrameInfo size = _emu->GetVideoDecoder()->GetBaseFrameInfo(true);
+	//size = VideoRenderer::GetEmuHudSize(size);
+	//float s = size.Width / 256.0;
+	int color = pressed ? 0x00FFFFFF : colors[GetSettingColor()];
+	_hud->DrawRectangle((_xOffset + x), (_yOffset + y), width, height, color, true, 1);
 }
 
 void InputHud::DrawNumber(int number, int x, int y)
 {
+	 x += _xOffset;
+	 y += _yOffset;
+	
+	 int numColor = colors[GetSettingColor()];
+	 if(_emu->GetConsole()->GetControlManager()->IsLagFrame()) {
+		 numColor = 0x00BB1111;
+	 }
+
+	_hud->DrawRectangle(x, y, 4, 5, numColor, true, 1);
 	switch(number) {
+		case 0:
+			_hud->DrawRectangle(x + 1, y + 1, 2, 3, bgColor, true, 1);
+			break;
+
 		case 1:
-			_hud->DrawLine(x+1 + _xOffset, y + _yOffset, x+1 + _xOffset, 4 + y + _yOffset, color[0], 1);
-			_hud->DrawLine(x + _xOffset, 4 + y + _yOffset, x+2 + _xOffset, 4 + y + _yOffset, color[0], 1);
-			_hud->DrawPixel(x + _xOffset, 1 + y + _yOffset, color[0], 1);
+			_hud->DrawRectangle(x, y, 1, 5, bgColor, true, 1);
+			_hud->DrawRectangle(x + 1, y + 1, 1, 3, bgColor, true, 1);
+			_hud->DrawRectangle(x + 3, y, 1, 4, bgColor, true, 1);
 			break;
 
 		case 2:
-			_hud->DrawLine(x + _xOffset, y + _yOffset, x+2 + _xOffset, y + _yOffset, color[0], 1);
-			_hud->DrawPixel(x+2 + _xOffset, 1 + y + _yOffset, color[0], 1);
-			_hud->DrawLine(x + _xOffset, 2 + y + _yOffset, x+2 + _xOffset, 2 + y + _yOffset, color[0], 1);
-			_hud->DrawPixel(x + _xOffset, 3 + y + _yOffset, color[0], 1);
-			_hud->DrawLine(x + _xOffset, 4 + y + _yOffset, x+2 + _xOffset, 4 + y + _yOffset, color[0], 1);
+			_hud->DrawRectangle(x, y + 1, 3, 1, bgColor, true, 1);
+			_hud->DrawRectangle(x + 1, y + 3, 3, 1, bgColor, true, 1);
 			break;
 
 		case 3:
-			_hud->DrawLine(x + _xOffset, y + _yOffset, x+2 + _xOffset, y + _yOffset, color[0], 1);
-			_hud->DrawPixel(x+2 + _xOffset, 1 + y + _yOffset, color[0], 1);
-			_hud->DrawLine(x + _xOffset, 2 + y + _yOffset, x+2 + _xOffset, 2 + y + _yOffset, color[0], 1);
-			_hud->DrawPixel(x+2 + _xOffset, 3 + y + _yOffset, color[0], 1);
-			_hud->DrawLine(x + _xOffset, 4 + y + _yOffset, x+2 + _xOffset, 4 + y + _yOffset, color[0], 1);
+			_hud->DrawRectangle(x, y + 1, 3, 1, bgColor, true, 1);
+			_hud->DrawRectangle(x, y + 3, 3, 1, bgColor, true, 1);
 			break;
 
 		case 4:
-			_hud->DrawLine(x + _xOffset, y + _yOffset, x + _xOffset, 2 + y + _yOffset, color[0], 1);
-			_hud->DrawLine(x+2 + _xOffset, y + _yOffset, x+2 + _xOffset, 4 + y + _yOffset, color[0], 1);
-			_hud->DrawLine(x + _xOffset, 2 + y + _yOffset, x+2 + _xOffset, 2 + y + _yOffset, color[0], 1);
+			_hud->DrawRectangle(x, y + 3, 3, 2, bgColor, true, 1);
+			_hud->DrawRectangle(x + 1, y, 2, 2, bgColor, true, 1);
 			break;
 
 		case 5:
-			_hud->DrawLine(x + _xOffset, y + _yOffset, x+2 + _xOffset, y + _yOffset, color[0], 1);
-			_hud->DrawPixel(x + _xOffset, 1 + y + _yOffset, color[0], 1);
-			_hud->DrawLine(x + _xOffset, 2 + y + _yOffset, x+2 + _xOffset, 2 + y + _yOffset, color[0], 1);
-			_hud->DrawPixel(x+2 + _xOffset, 3 + y + _yOffset, color[0], 1);
-			_hud->DrawLine(x + _xOffset, 4 + y + _yOffset, x+2 + _xOffset, 4 + y + _yOffset, color[0], 1);
+			_hud->DrawRectangle(x + 1, y + 1, 3, 1, bgColor, true, 1);
+			_hud->DrawRectangle(x, y + 3, 3, 1, bgColor, true, 1);
 			break;
 
 		case 6:
-			_hud->DrawLine(x + _xOffset, y + _yOffset, x + 2 + _xOffset, y + _yOffset, color[0], 1);
-			_hud->DrawLine(x + _xOffset, 1 + y + _yOffset, x + _xOffset, y + _yOffset + 3, color[0], 1);
-			_hud->DrawLine(x + _xOffset, 2 + y + _yOffset, x + 2 + _xOffset, 2 + y + _yOffset, color[0], 1);
-			_hud->DrawPixel(x + 2 + _xOffset, 3 + y + _yOffset, color[0], 1);
-			_hud->DrawLine(x + _xOffset, 4 + y + _yOffset, x + 2 + _xOffset, 4 + y + _yOffset, color[0], 1);
+			_hud->DrawRectangle(x + 1, y + 1, 3, 1, bgColor, true, 1);
+			_hud->DrawRectangle(x + 1, y + 3, 2, 1, bgColor, true, 1);
 			break;
 
 		case 7:
-			_hud->DrawLine(x + _xOffset, y + _yOffset, x + 2 + _xOffset, y + _yOffset, color[0], 1);
-			_hud->DrawLine(x + _xOffset + 2, y + _yOffset, x + _xOffset + 2, 4 + y + _yOffset, color[0], 1);
+			_hud->DrawRectangle(x, y + 2, 1, 3, bgColor, true, 1);
+			_hud->DrawRectangle(x + 1, y + 1, 2, 4, bgColor, true, 1);
 			break;
 
 		case 8:
-			_hud->DrawRectangle(x + _xOffset, y + _yOffset, 3, 5, color[0], false, 1);
-			_hud->DrawPixel(x + _xOffset + 1, y + _yOffset + 2, color[0], 1);
+			_hud->DrawRectangle(x + 1, y + 3, 2, 1, bgColor, true, 1);
+			_hud->DrawRectangle(x + 1, y + 1, 2, 1, bgColor, true, 1);
+			break;
+
+		case 9:
+			_hud->DrawRectangle(x, y + 3, 3, 2, bgColor, true, 1);
+			_hud->DrawRectangle(x + 1, y + 1, 2, 1, bgColor, true, 1);
 			break;
 
 		default:
@@ -92,7 +107,7 @@ void InputHud::DrawMousePosition(MousePosition pos)
 	}
 }
 
-void InputHud::DrawOutline(int width, int height)
+void InputHud::DrawOutline(int width, int height, int textX, int textY)
 {
 	InputConfig& cfg = _emu->GetSettings()->GetInputConfig();
 
@@ -115,8 +130,12 @@ void InputHud::DrawOutline(int width, int height)
 			break;
 	}
 
-	_hud->DrawRectangle(_xOffset, _yOffset, width, height, 0x80CCCCCC, true, 1);
-	_hud->DrawRectangle(_xOffset, _yOffset, width, height, color[0], false, 1);
+	int color = colors[GetSettingColor()];
+
+	_hud->DrawRectangle(_xOffset, _yOffset, width, height, bgColor, true, 1);
+	_hud->DrawRectangle(_xOffset, _yOffset, width, height, color, false, 1);
+	_hud->DrawLine(_xOffset + width - textX, _yOffset, _xOffset + width - 1, _yOffset, bgColor, 1);
+	_hud->DrawLine(_xOffset + width - 1 , _yOffset, _xOffset + width - 1, _yOffset + textY - 1, bgColor, 1);
 	
 	_outlineWidth = width;
 	_outlineHeight = height;
@@ -132,6 +151,8 @@ void InputHud::DrawController(ControllerData& data, BaseControlManager* controlM
 	controller->SetRawState(data.State);
 	controller->DrawController(*this);
 }
+
+
 
 void InputHud::EndDrawController()
 {
@@ -225,4 +246,36 @@ void InputHud::DrawControllers(FrameInfo size, vector<ControllerData> controller
 	for(ControllerData& portData : controllerData) {
 		DrawController(portData, console->GetControlManager());
 	}
+
+}
+
+int InputHud::GetSettingColor()
+{
+	if(!_emu->GetHistoryViewer()->IsEndOfHistory()) return 2;
+
+	if(_emu->IsDebugging()) return 2;
+
+	if(_emu->GetMovieManager()->Playing()) {
+		return 2;
+	}
+
+	CheatManager* cheats = _emu->GetCheatManager();
+	if(cheats->HasCheats()) return 1;
+
+	//TODO make specific to each console
+	NesConfig& cfg = _emu->GetSettings()->GetNesConfig();
+
+	if(_emu->GetIsUnclean()) {
+		return 2;
+	}
+
+	if(&cfg == NULL) {
+		return 0;
+	}
+	// check overclocking feature
+	if(cfg.PpuExtraScanlinesBeforeNmi != 0 || cfg.PpuExtraScanlinesAfterNmi != 0) {
+		return 2;
+	}
+
+	return 0;
 }

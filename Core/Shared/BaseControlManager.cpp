@@ -179,11 +179,11 @@ void BaseControlManager::UpdateInputState()
 
 	_emu->ProcessEvent(EventType::InputPolled, _cpuType);
 
-	if(!_emu->IsRunAheadFrame()) {
+	
 		for(IInputRecorder* recorder : _inputRecorders) {
 			recorder->RecordInput(_controlDevices);
 		}
-	}
+	
 
 	//MessageManager::Log(log);
 
@@ -234,4 +234,9 @@ uint32_t BaseControlManager::GetPollCounter()
 void BaseControlManager::SetPollCounter(uint32_t value)
 {
 	_pollCounter = value;
+}
+
+bool BaseControlManager::IsLagFrame()
+{
+	return !_wasInputRead;
 }

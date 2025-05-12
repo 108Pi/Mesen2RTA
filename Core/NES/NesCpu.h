@@ -513,18 +513,15 @@ private:
 		JMP(GetOperand());
 	}
 	void JMP_Ind() { JMP(GetInd()); }
-
 	void JSR() {
-		uint8_t lo = ReadByte();
+		uint16_t addr = GetOperand();
 		DummyRead();
-		Push(PC());
-		uint16_t addr = (ReadByte() << 8) | lo;
+		Push((uint16_t)(PC() - 1));
 		JMP(addr);
 	}
-
 	void RTS() {
-		DummyRead();
 		uint16_t addr = PopWord();
+		DummyRead();
 		DummyRead();
 		SetPC(addr + 1);
 	}
