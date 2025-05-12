@@ -17,7 +17,6 @@ struct GbaLayerRendererData
 
 	uint16_t TileIndex;
 	int16_t RenderX;
-	int16_t NextLoad;
 
 	int32_t TransformX;
 	int32_t TransformY;
@@ -98,11 +97,6 @@ private:
 
 	GbaPpuState _state = {};
 
-	uint16_t _vblankStartScanline = 160;
-	uint16_t _lastScanline = 227;
-
-	bool _inOverclock = false;
-
 	Emulator* _emu = nullptr;
 	GbaConsole* _console = nullptr;
 	GbaMemoryManager* _memoryManager = nullptr;
@@ -117,7 +111,6 @@ private:
 
 	GbaPixelData* _oamWriteOutput = nullptr;
 	GbaPixelData* _oamReadOutput = nullptr;
-	GbaPixelData _renderSprPixel = {};
 
 	GbaPixelData _oamOutputBuffers[2][GbaConstants::ScreenWidth] = {};
 	GbaPixelData _layerOutput[4][GbaConstants::ScreenWidth] = {};
@@ -150,7 +143,6 @@ private:
 	bool _isFirstOamTileLoad = false;
 	uint8_t _loadObjMatrix = 0;
 	uint8_t _oamScanline = 0;
-	uint8_t _oamMosaicScanline = 0;
 	uint8_t _oamMosaicY = 0;
 
 	uint8_t _memoryAccess[308 * 4] = {};
@@ -189,8 +181,8 @@ private:
 
 	void SendFrame();
 	
-	template<int i, bool mosaic, bool bpp8> __forceinline void PushBgPixels(int renderX);
-	template<int i, bool mosaic, bool bpp8, bool mirror> __forceinline void PushBgPixels(int renderX);
+	template<int i, bool mosaic, bool bpp8> __forceinline void PushBgPixels();
+	template<int i, bool mosaic, bool bpp8, bool mirror> __forceinline void PushBgPixels();
 
 	template<int layer> void RenderTilemap();
 	template<int layer, bool mosaic, bool bpp8> void RenderTilemap();
@@ -216,13 +208,8 @@ private:
 
 	void ProcessEndOfScanline();
 	void ProcessHBlank();
-	void ProcessLayerToggleDelay();
 
 	void DebugProcessMemoryAccessView();
-	uint16_t GetCurrentScanline();
-	bool IsScanlineMatch();
-
-	template<int i> void UpdateLayerTransform();
 
 public:
 	void Init(Emulator* emu, GbaConsole* console, GbaMemoryManager* memoryManager);
@@ -259,10 +246,8 @@ public:
 	GbaPpuState& GetState() { return _state; }
 	uint32_t GetFrameCount() { return _state.FrameCount; }
 	int32_t GetScanline() { return _state.Scanline; }
-	uint32_t GetScanlineCount() { return _lastScanline + 1; }
 	uint32_t GetCycle() { return _state.Cycle; }
 	bool IsBitmapMode() { return _state.BgMode >= 3; }
-	bool IsOverclockScanline() { return _inOverclock; }
-
+	
 	void Serialize(Serializer& s) override;
 };

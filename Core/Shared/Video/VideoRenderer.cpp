@@ -111,16 +111,9 @@ void VideoRenderer::RenderThread()
 FrameInfo VideoRenderer::GetEmuHudSize(FrameInfo baseFrameSize)
 {
 	FrameInfo size = {};
-	if(_emu->GetSettings()->GetPreferences().HudSize == HudDisplaySize::Scaled) {
-		//Adjust the system HUD's width to match the aspect ratio to allow text to be unstretched
-		//(The Lua HUD is not adjusted to allow scripts that need to match positions on the game screen to work correctly.)
-		double aspectRatio = _emu->GetSettings()->GetAspectRatio(_emu->GetRegion(), baseFrameSize);
-		size.Width = (uint32_t)std::round(baseFrameSize.Height * aspectRatio);
-		size.Height = baseFrameSize.Height;
-	} else {
-		size.Width = _rendererWidth / 2;
-		size.Height = _rendererHeight / 2;
-	}
+	double aspectRatio = _emu->GetSettings()->GetAspectRatio(_emu->GetRegion(), baseFrameSize);
+	size.Width = (uint32_t)std::round(baseFrameSize.Height * aspectRatio);
+	size.Height = baseFrameSize.Height;
 	return size;
 }
 

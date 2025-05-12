@@ -73,7 +73,6 @@ namespace Mesen.Debugger.ViewModels
 		private byte[] _sourceData = Array.Empty<byte>();
 		private bool _refreshPending;
 		private bool _inGameLoaded;
-		private bool _preventPresetLoad;
 
 		[Obsolete("For designer only")]
 		public TileViewerViewModel() : this(CpuType.Snes, new(), new(), null) { }
@@ -296,12 +295,8 @@ namespace Mesen.Debugger.ViewModels
 			MaximumAddress = Math.Max(0, DebugApi.GetMemorySize(Config.Source) - 1);
 
 			Dispatcher.UIThread.Post(() => {
-				if(!_preventPresetLoad) {
-					//Don't load the preset when the tile viewer was opened via "View in tile viewer"
-					Config.SelectedPreset = selectedPreset;
-					LoadSelectedPreset(true);
-				}
-				_preventPresetLoad = false;
+				Config.SelectedPreset = selectedPreset;
+				LoadSelectedPreset(true);
 			});
 		}
 
@@ -325,11 +320,9 @@ namespace Mesen.Debugger.ViewModels
 
 		public void SelectTile(MemoryType type, int address, TileFormat format, TileLayout layout, int paletteIndex)
 		{
-			_preventPresetLoad = true;
-			Config.SelectedPreset = "";
 			Config.Source = type;
 			Config.Format = format;
-			SelectedPalette = Math.Max(0, paletteIndex);
+			SelectedPalette = paletteIndex;
 			Config.StartAddress = address / AddressIncrement * AddressIncrement;
 			Config.Layout = layout;
 			PixelSize tileSize = Config.Format.GetTileSize();

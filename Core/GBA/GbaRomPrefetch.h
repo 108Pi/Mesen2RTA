@@ -102,13 +102,18 @@ public:
 		}
 	}
 
-	__forceinline bool NeedExec(bool prefetchEnabled)
+	__forceinline void SetSuspendState(bool suspended)
 	{
-		return _state.ReadAddr > 0 && !IsFull() && (prefetchEnabled || _state.ClockCounter > 0);
+		//Prefetch is suspended by DMA once DMA accesses ROM
+		_state.Suspended = suspended;
 	}
 
 	void Exec(uint8_t clocks, bool prefetchEnabled)
 	{
+		if(_state.Suspended || _state.ReadAddr == 0 || IsFull() || (!prefetchEnabled && _state.ClockCounter == 0)) {
+			return;
+		}
+
 		_state.Started = true;
 
 		if(_state.WasFilled) {
@@ -198,9 +203,7 @@ public:
 			if(!IsEmpty()) {
 				//Data is already available, return it without any additional delay
 				_state.ReadAddr += 2;
-				if(NeedExec(prefetchEnabled)) {
-					Exec(1, prefetchEnabled);
-				}
+				Exec(1, prefetchEnabled);
 				return 1;
 			} else {
 				//Prefetch in progress, wait until it ends
@@ -216,9 +219,7 @@ public:
 				return WaitForPendingRead();
 			}
 		} else {
-			if(NeedExec(prefetchEnabled)) {
-				Exec(1, prefetchEnabled);
-			}
+			Exec(1, prefetchEnabled);
 			return 1;
 		}
 	}
@@ -233,6 +234,7 @@ public:
 		SV(_state.ReadAddr);
 		SV(_state.PrefetchAddr);
 		SV(_state.BoundaryCyclePenalty);
+		SV(_state.Suspended);
 		SV(_state.WasFilled);
 		SV(_state.Sequential);
 		SV(_state.Started);

@@ -11,7 +11,7 @@ class BaseControlManager;
 class InputHud
 {
 private:
-	Emulator* _emu = nullptr;
+	Emulator* _emu;
 	DebugHud* _hud = nullptr;
 
 	int _xOffset = 0;
@@ -21,12 +21,13 @@ private:
 	int _controllerIndex = 0;
 
 	void DrawController(ControllerData& data, BaseControlManager* controlManager);
+	int GetSettingColor();
 
 public:
 	InputHud(Emulator *emu, DebugHud* hud);
 
 	void DrawMousePosition(MousePosition pos);
-	void DrawOutline(int width, int height);
+	void DrawOutline(int width, int height, int textX = 0, int textY = 0);
 	void DrawButton(int x, int y, int width, int height, bool pressed);
 	void DrawNumber(int number, int x, int y);
 	void EndDrawController();

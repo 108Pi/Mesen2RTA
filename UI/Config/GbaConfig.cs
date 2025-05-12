@@ -26,7 +26,6 @@ namespace Mesen.Config
 		[Reactive] public bool HideBgLayer4 { get; set; } = false;
 		[Reactive] public bool DisableSprites { get; set; } = false;
 
-		[Reactive][MinMax(0, 1000)] public UInt32 OverclockScanlineCount { get; set; } = 0;
 		[Reactive] public RamState RamPowerOnState { get; set; } = RamState.AllZeros;
 		[Reactive] public GbaSaveType SaveType { get; set; } = GbaSaveType.AutoDetect;
 		[Reactive] public GbaRtcType RtcType { get; set; } = GbaRtcType.AutoDetect;
@@ -57,7 +56,6 @@ namespace Mesen.Config
 				HideBgLayer4 = HideBgLayer4,
 				DisableSprites = DisableSprites,
 
-				OverclockScanlineCount = OverclockScanlineCount,
 				RamPowerOnState = RamPowerOnState,
 				SaveType = SaveType,
 				RtcType = RtcType,
@@ -95,7 +93,6 @@ namespace Mesen.Config
 		[MarshalAs(UnmanagedType.I1)] public bool HideBgLayer4;
 		[MarshalAs(UnmanagedType.I1)] public bool DisableSprites;
 
-		public UInt32 OverclockScanlineCount;
 		public RamState RamPowerOnState;
 		public GbaSaveType SaveType;
 		public GbaRtcType RtcType;

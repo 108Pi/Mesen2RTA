@@ -1,6 +1,5 @@
 #include "pch.h"
 #include "GBA/GbaPpu.h"
-#include "GBA/APU/GbaApu.h"
 #include "GBA/GbaTypes.h"
 #include "GBA/GbaConsole.h"
 #include "GBA/GbaMemoryManager.h"
@@ -28,9 +27,7 @@ void GbaPpu::Init(Emulator* emu, GbaConsole* console, GbaMemoryManager* memoryMa
 	_memoryManager = memoryManager;
 
 	_state = {};
-	_state.Scanline = 225;
-	_state.Cycle = 0;
-	
+
 	_paletteRam = (uint16_t*)_emu->GetMemory(MemoryType::GbaPaletteRam).Memory;
 	_vram = (uint8_t*)_emu->GetMemory(MemoryType::GbaVideoRam).Memory;
 	_vram16 = (uint16_t*)_emu->GetMemory(MemoryType::GbaVideoRam).Memory;
@@ -76,16 +73,20 @@ void GbaPpu::ProcessHBlank()
 	if(_state.Scanline < 160) {
 		RenderScanline();
 		_console->GetDmaController()->TriggerDma(GbaDmaTrigger::HBlank);
-	} else {
-		ProcessLayerToggleDelay();
 	}
 
-	if(_state.ForcedBlankDisableTimer) {
-		_state.ForcedBlankDisableTimer--;
+	for(int i = 0; i < 4; i++) {
+		if(_state.BgLayers[i].EnableTimer && --_state.BgLayers[i].EnableTimer == 0) {
+			//Exact timing hasn't been verified
+			//The mGBA Suite test writes on H=1065 and expects the layer to be enabled 3 scanlines later (write on scanline 101, starts rendering on scanline 104, so just over 2 scanlines)
+			//Spyro - Season of Ice writes on H=30, and expects the layer to be enabled 2 scanlines later
+			//Doing this at the start of hblank allows both scenarios the work
+			_state.BgLayers[i].Enabled = true;
+		}
 	}
 
 	if(_state.HblankIrqEnabled) {
-		_console->GetMemoryManager()->SetDelayedIrqSource(GbaIrqSource::LcdHblank, 2);
+		_console->GetMemoryManager()->SetDelayedIrqSource(GbaIrqSource::LcdHblank, 4);
 	}
 }
 
@@ -93,7 +94,6 @@ void GbaPpu::ProcessEndOfScanline()
 {
 	ProcessSprites();
 	ProcessWindow();
-	_renderSprPixel = {};
 
 	if(!_skipRender && _emu->IsDebugging()) {
 		DebugProcessMemoryAccessView();
@@ -113,6 +113,23 @@ void GbaPpu::ProcessEndOfScanline()
 	std::fill(_layerOutput[2], _layerOutput[2] + 240, GbaPixelData {});
 	std::fill(_layerOutput[3], _layerOutput[3] + 240, GbaPixelData {});
 
+	for(int i = 0; i < 2; i++) {
+		if(_state.Transform[i].PendingUpdateX) {
+			_state.Transform[i].LatchOriginX = (_state.Transform[i].OriginX << 4) >> 4; //sign extend
+			_state.Transform[i].PendingUpdateX = false;
+		}
+		if(_state.Transform[i].PendingUpdateY) {
+			_state.Transform[i].LatchOriginY = (_state.Transform[i].OriginY << 4) >> 4; //sign extend
+			_state.Transform[i].PendingUpdateY = false;
+		}
+	}
+
+	for(int i = 0; i < 4; i++) {
+		//Unverified: Latch X scroll value at the start of each scanline
+		//This fixes display issues in the Fire Emblem Sacred Stones menu
+		_state.BgLayers[i].ScrollXLatch = _state.BgLayers[i].ScrollX;
+	}
+
 	if(_state.Scanline >= 2 && _state.Scanline < 162 && _triggerSpecialDma) {
 		//"Video Capture Mode" dma, channel 3 only - auto-stops on scanline 161
 		_console->GetDmaController()->TriggerDmaChannel(GbaDmaTrigger::Special, 3, _state.Scanline == 161);
@@ -120,47 +137,33 @@ void GbaPpu::ProcessEndOfScanline()
 		_triggerSpecialDma = _console->GetDmaController()->IsVideoCaptureDmaEnabled();
 	}
 
-	if(_state.Scanline == 160 && _vblankStartScanline != 160) {
-		//Catch up and pause APU at the start of the overclock scanlines
-		_console->GetApu()->Run();
-		_console->GetApu()->PlayQueuedAudio();
-		_inOverclock = true;
-	} else if(_inOverclock && _state.Scanline == _vblankStartScanline) {
-		//Catch up APU again to update its clock counter before ending overclock
-		_console->GetApu()->Run();
-		_inOverclock = false;
-	}
-
-	if(_state.Scanline == _vblankStartScanline) {
+	if(_state.Scanline == 160) {
 		_oamScanline = 0;
 		_state.ObjEnableTimer = 0;
 		SendFrame();
 		if(_state.VblankIrqEnabled) {
-			_console->GetMemoryManager()->SetDelayedIrqSource(GbaIrqSource::LcdVblank, 1);
+			_console->GetMemoryManager()->SetIrqSource(GbaIrqSource::LcdVblank);
 		}
 		_console->GetDmaController()->TriggerDma(GbaDmaTrigger::VBlank);
-	} else if(_state.Scanline >= _lastScanline + 1) {
-		EmuSettings* settings = _emu->GetSettings();
-		GbaConfig& cfg = settings->GetGbaConfig();
+	} else if(_state.Scanline == 228) {
 		_state.Scanline = 0;
 
-		_vblankStartScanline = 160 + cfg.OverclockScanlineCount;
-		_lastScanline = 227 + cfg.OverclockScanlineCount;
+		//Transform values latched at the start of the frame
+		_state.Transform[0].LatchOriginX = (int32_t)_state.Transform[0].OriginX;
+		_state.Transform[0].LatchOriginY = (int32_t)_state.Transform[0].OriginY;
+		_state.Transform[1].LatchOriginX = (int32_t)_state.Transform[1].OriginX;
+		_state.Transform[1].LatchOriginY = (int32_t)_state.Transform[1].OriginY;
 
-		//Transform values are latched on the first scanline where the layer is enabled
-		//(unverified - needed to pass both bgpd test and get the correct result in Pinball Tycoon)
-		_state.Transform[0].NeedInit = true;
-		_state.Transform[1].NeedInit = true;
-
-		if(cfg.DisableSprites) {
+		if(_emu->GetSettings()->GetGbaConfig().DisableSprites) {
 			std::fill(_oamOutputBuffers[0], _oamOutputBuffers[0] + 240, GbaPixelData {});
 			std::fill(_oamOutputBuffers[1], _oamOutputBuffers[1] + 240, GbaPixelData {});
 		}
 
 		_emu->ProcessEvent(EventType::StartFrame, CpuType::Gba);
 
+		EmuSettings* settings = _emu->GetSettings();
 		_skipRender = (
-			!cfg.DisableFrameSkipping &&
+			!settings->GetGbaConfig().DisableFrameSkipping &&
 			!_emu->GetRewindManager()->IsRewinding() &&
 			!_emu->GetVideoRenderer()->IsRecording() &&
 			(settings->GetEmulationSpeed() == 0 || settings->GetEmulationSpeed() > 150) &&
@@ -172,7 +175,7 @@ void GbaPpu::ProcessEndOfScanline()
 	}
 
 	if(_state.ScanlineIrqEnabled && _state.Scanline == _state.Lyc) {
-		_console->GetMemoryManager()->SetDelayedIrqSource(GbaIrqSource::LcdScanlineMatch, 2);
+		_console->GetMemoryManager()->SetIrqSource(GbaIrqSource::LcdScanlineMatch);
 	}
 
 	InitializeWindows();
@@ -215,8 +218,6 @@ void GbaPpu::DebugSendFrame()
 
 void GbaPpu::RenderScanline(bool forceRender)
 {
-	ProcessLayerToggleDelay();
-
 	if(_skipRender && !forceRender) {
 		return;
 	}
@@ -228,7 +229,7 @@ void GbaPpu::RenderScanline(bool forceRender)
 		return;
 	}
 
-	if(_state.ForcedBlank || _state.ForcedBlankDisableTimer) {
+	if(_state.ForcedBlank) {
 		uint16_t* rowStart = _currentBuffer + (_state.Scanline * GbaConstants::ScreenWidth);
 		std::fill(rowStart, rowStart + GbaConstants::ScreenWidth, 0x7FFF);
 		return;
@@ -289,7 +290,10 @@ void GbaPpu::ProcessColorMath()
 	int start = _lastRenderCycle < 46 ? 0 : std::max(0, ((_lastRenderCycle - 46) / 4) + 1);
 	int end = std::min((_state.Cycle - 46) / 4, 239);
 
+	GbaPixelData sprPixel = {};
+
 	for(int x = start; x <= end; x++) {
+
 		if constexpr(windowEnabled) {
 			wnd = _activeWindow[x];
 			if(_state.WindowActiveLayers[wnd][GbaPpu::SpriteLayerIndex]) {
@@ -302,10 +306,10 @@ void GbaPpu::ProcessColorMath()
 			main = _oamReadOutput[x];
 		}
 		
-		if(!(main.Color & GbaPpu::SpriteMosaicFlag) || !(_renderSprPixel.Color & GbaPpu::SpriteMosaicFlag) || x % (_state.ObjMosaicSizeX + 1) == 0) {
-			_renderSprPixel = main;
+		if(!(main.Color & GbaPpu::SpriteMosaicFlag) || !(sprPixel.Color & GbaPpu::SpriteMosaicFlag) || x % (_state.ObjMosaicSizeX + 1) == 0) {
+			sprPixel = main;
 		} else {
-			main = _renderSprPixel;
+			main = sprPixel;
 		}
 
 		sub = {};
@@ -365,7 +369,7 @@ uint16_t GbaPpu::ReadColor(int x, uint16_t addr)
 	if(addr & GbaPpu::DirectColorFlag) {
 		return addr & 0x7FFF;
 	} else {
-		_memoryAccess[(x << 2) + (isSubColor ? 49 : 47)] |= GbaPpuMemAccess::Palette;
+		_memoryAccess[(x << 2) + (isSubColor ? 48 : 46)] |= GbaPpuMemAccess::Palette;
 		return _paletteRam[(addr >> 1) & 0x1FF] & 0x7FFF;
 	}
 }
@@ -392,14 +396,14 @@ void GbaPpu::InitializeWindows()
 	//Windows are enabled/disabled when the scanline reaches the start/end scanlines
 	//See window_midframe test - unsure about behavior when top==bottom
 	if(_state.Scanline == _state.Window[0].TopY) {
-		_window0ActiveY = true;
+		_window0ActiveY = _state.Window0Enabled;
 	}
 	if(_state.Scanline == _state.Window[0].BottomY) {
 		_window0ActiveY = false;
 	}
 
 	if(_state.Scanline == _state.Window[1].TopY) {
-		_window1ActiveY = true;
+		_window1ActiveY = _state.Window1Enabled;
 	}
 	if(_state.Scanline == _state.Window[1].BottomY) {
 		_window1ActiveY = false;
@@ -445,9 +449,9 @@ void GbaPpu::ProcessWindow()
 			}
 
 			int length = std::min(nextChange - x, end - x);
-			if(_window0ActiveX && _window0ActiveY && _state.Window0Enabled) {
+			if(_window0ActiveX && _window0ActiveY) {
 				memset(_activeWindow + x, GbaPpu::Window0, length);
-			} else if(_window1ActiveX && _window1ActiveY && _state.Window1Enabled) {
+			} else if(_window1ActiveX && _window1ActiveY) {
 				memset(_activeWindow + x, GbaPpu::Window1, length);
 			}
 
@@ -491,21 +495,21 @@ void GbaPpu::SetPixelData(GbaPixelData& pixel, uint16_t color, uint8_t priority,
 }
 
 template<int i, bool mosaic, bool bpp8>
-void GbaPpu::PushBgPixels(int renderX)
+void GbaPpu::PushBgPixels()
 {
 	if(_layerData[i].HoriMirror) {
-		PushBgPixels<i, mosaic, bpp8, true>(renderX);
+		PushBgPixels<i, mosaic, bpp8, true>();
 	} else {
-		PushBgPixels<i, mosaic, bpp8, false>(renderX);
+		PushBgPixels<i, mosaic, bpp8, false>();
 	}
 }
 
 template<int i, bool mosaic, bool bpp8, bool mirror>
-void GbaPpu::PushBgPixels(int renderX)
+void GbaPpu::PushBgPixels()
 {
 	GbaLayerRendererData& data = _layerData[i];
 
-	uint16_t tileData = data.TileData;
+	uint16_t tileData = _vram16[data.FetchAddr >> 1];
 	if constexpr(mirror) {
 		if constexpr(bpp8) {
 			tileData = ((tileData & 0xFF00) >> 8) | ((tileData & 0x00FF) << 8);
@@ -519,6 +523,7 @@ void GbaPpu::PushBgPixels(int renderX)
 		}
 	}
 
+	int16_t renderX = data.RenderX;
 	constexpr int len = bpp8 ? 2 : 4;
 	for(int x = 0; x < len; x++) {
 		if(renderX >= 0 && renderX < 240) {
@@ -539,6 +544,7 @@ void GbaPpu::PushBgPixels(int renderX)
 	}
 
 	data.FetchAddr += (mirror ? -2 : 2);
+	data.RenderX = renderX;
 };
 
 template<int i>
@@ -582,44 +588,83 @@ void GbaPpu::RenderTilemap()
 	yPos &= 0xFF;
 
 	if(_lastRenderCycle == -1) {
-		_layerData[i].NextLoad = -1;
+		_layerData[i].RenderX = -(layer.ScrollXLatch & 0x07);
 	}
 
-	int gap = 4 + i;
-	int cycle = std::max(0, _lastRenderCycle + 1 - gap) & ~0x03;
-	int end = std::min<int>(_state.Cycle, 1006) - gap;
-	for(; cycle <= end; cycle += 4) {
-		int pixelOffset = (cycle >> 2) - 7;
-		if(((pixelOffset + layer.ScrollX) & 0x07) == 0) {
-			//Fetch tilemap data
-			uint16_t xPos = layer.ScrollX + pixelOffset;
-			uint16_t addr = baseAddr;
-			if(layer.DoubleWidth && (xPos & 0x100)) {
-				addr += 0x400;
+	//MessageManager::Log(std::to_string(_state.Scanline) + " render " + std::to_string(_lastRenderCycle+1) + " to " + std::to_string(_state.Cycle));
+	int gap = (31 + i - (layer.ScrollXLatch & 0x07) * 4);
+	int cycle = std::max(0, _lastRenderCycle + 1 - gap);
+	int end = std::min<int>(_state.Cycle, 1005) - gap;
+
+	for(; cycle <= end; cycle++) {
+		//MessageManager::Log(std::to_string(_state.Scanline) + " fetch cycle " + std::to_string(fetchCycle));
+		switch(cycle & 0x1F) {
+			case 0: {
+				//Fetch tilemap data
+				uint16_t xPos = layer.ScrollXLatch + _layerData[i].RenderX;
+				uint16_t addr = baseAddr;
+				if(layer.DoubleWidth && (xPos & 0x100)) {
+					addr += 0x400;
+				}
+				xPos &= 0xFF;
+				
+				uint16_t vramAddr = addr + yPos / 8 * 32 + xPos / 8;
+				uint16_t tilemapData = _vram16[vramAddr];
+				_memoryAccess[cycle + gap] |= GbaPpuMemAccess::Vram;
+
+				_layerData[i].TileIndex = tilemapData & 0x3FF;
+				_layerData[i].HoriMirror = tilemapData & (1 << 10);
+				_layerData[i].VertMirror = tilemapData & (1 << 11);
+				_layerData[i].PaletteIndex = bpp8 ? 0 : (tilemapData >> 12) & 0x0F;
+
+				_layerData[i].TileRow = _layerData[i].VertMirror ? (~yPos & 0x07) : (yPos & 0x07);
+				_layerData[i].TileColumn = _layerData[i].HoriMirror ? (bpp8 ? 6 : 2) : 0;
+				_layerData[i].FetchAddr = layer.TilesetAddr + _layerData[i].TileIndex * (bpp8 ? 64 : 32) + _layerData[i].TileRow * (bpp8 ? 8 : 4) + _layerData[i].TileColumn;
+
+				//MessageManager::Log(std::to_string(_state.Scanline) + "," + std::to_string(cycle) + " fetch tilemap");
+				cycle += 3;
+				break;
 			}
-			xPos &= 0xFF;
 
-			uint16_t vramAddr = addr + yPos / 8 * 32 + xPos / 8;
-			uint16_t tilemapData = _vram16[vramAddr];
-			_memoryAccess[cycle + gap] |= GbaPpuMemAccess::Vram;
+			case 4: {
+				//Fetch tile data (4bpp & 8bpp)
+				PushBgPixels<i, mosaic, bpp8>();
+				_memoryAccess[cycle + gap] |= GbaPpuMemAccess::Vram;
 
-			_layerData[i].TileIndex = tilemapData & 0x3FF;
-			_layerData[i].HoriMirror = tilemapData & (1 << 10);
-			_layerData[i].VertMirror = tilemapData & (1 << 11);
-			_layerData[i].PaletteIndex = bpp8 ? 0 : (tilemapData >> 12) & 0x0F;
+				//MessageManager::Log(std::to_string(_state.Scanline) + "," + std::to_string(cycle) + " fetch tile data 0");
+				cycle += bpp8 ? 7 : 15;
+				break;
+			}
 
-			_layerData[i].TileRow = _layerData[i].VertMirror ? (~yPos & 0x07) : (yPos & 0x07);
-			_layerData[i].TileColumn = _layerData[i].HoriMirror ? (bpp8 ? 6 : 2) : 0;
-			_layerData[i].FetchAddr = layer.TilesetAddr + _layerData[i].TileIndex * (bpp8 ? 64 : 32) + _layerData[i].TileRow * (bpp8 ? 8 : 4) + _layerData[i].TileColumn;
+			case 12: {
+				//Fetch tile data (8bpp only)
+				if constexpr(bpp8) {
+					PushBgPixels<i, mosaic, bpp8>();
+					_memoryAccess[cycle + gap] |= GbaPpuMemAccess::Vram;
+				}
+				cycle += 7;
+				break;
+			}
 
-			_layerData[i].NextLoad = cycle + 4;
-		} else if(_layerData[i].NextLoad == cycle) {
-			//Fetch tile data (4bpp & 8bpp)
-			_layerData[i].TileData = _vram16[_layerData[i].FetchAddr >> 1];
-			PushBgPixels<i, mosaic, bpp8>(((cycle - 4) >> 2) - 7);
-			_memoryAccess[cycle + gap] |= GbaPpuMemAccess::Vram;
+			case 20: {
+				//Fetch tile data (4bpp & 8bpp)
+				PushBgPixels<i, mosaic, bpp8>();
+				_memoryAccess[cycle + gap] |= GbaPpuMemAccess::Vram;
 
-			_layerData[i].NextLoad = cycle + (bpp8 ? 8 : 16);
+				//MessageManager::Log(std::to_string(_state.Scanline) + "," + std::to_string(cycle) + " fetch tile data 2");
+				cycle += bpp8 ? 7 : (11 - i);
+				break;
+			}
+						
+			case 28: {
+				//Fetch tile data (8bpp only)
+				if constexpr(bpp8) {
+					PushBgPixels<i, mosaic, bpp8>();
+					_memoryAccess[cycle + gap] |= GbaPpuMemAccess::Vram;
+				}
+				cycle += 3 - i;
+				break;
+			}
 		}
 	}
 }
@@ -633,14 +678,18 @@ void GbaPpu::RenderTransformTilemap()
 		return;
 	}
 
-	UpdateLayerTransform<i>();
-
 	uint16_t screenSize = 128 << layer.ScreenSize;
 
+	if(_lastRenderCycle == -1) {
+		_layerData[i].TransformX = (cfg.LatchOriginX << 4) >> 4; //sign extend
+		_layerData[i].TransformY = (cfg.LatchOriginY << 4) >> 4;
+		_layerData[i].RenderX = 0;
+	}
+	
 	//MessageManager::Log(std::to_string(_state.Scanline) + " render " + std::to_string(_lastRenderCycle+1) + " to " + std::to_string(_state.Cycle));
-	constexpr int gap = (38 - i * 2);
+	constexpr int gap = (37 - i * 2);
 	int cycle = std::max(0, _lastRenderCycle + 1 - gap);
-	int end = std::min<int>(_state.Cycle, 1006) - gap;
+	int end = std::min<int>(_state.Cycle, 1005) - gap;
 
 	for(; cycle <= end; cycle++) {
 		switch(cycle & 0x03) {
@@ -686,6 +735,17 @@ void GbaPpu::RenderTransformTilemap()
 			}
 		}
 	}
+
+	if(_state.Cycle == 1006) {
+		//Update x/y values for next scanline
+		if(!layer.Mosaic) {
+			cfg.LatchOriginX += cfg.Matrix[1];
+			cfg.LatchOriginY += cfg.Matrix[3];
+		} else if(_state.Scanline % (_state.BgMosaicSizeY + 1) == _state.BgMosaicSizeY) {
+			cfg.LatchOriginX += cfg.Matrix[1] * (_state.BgMosaicSizeY + 1);
+			cfg.LatchOriginY += cfg.Matrix[3] * (_state.BgMosaicSizeY + 1);
+		}
+	}
 }
 
 template<int mode>
@@ -696,18 +756,22 @@ void GbaPpu::RenderBitmapMode()
 		return;
 	}
 
-	UpdateLayerTransform<2>();
-
 	GbaTransformConfig& cfg = _state.Transform[0];
+
+	if(_lastRenderCycle == -1) {
+		_layerData[2].TransformX = (cfg.LatchOriginX << 4) >> 4; //sign extend
+		_layerData[2].TransformY = (cfg.LatchOriginY << 4) >> 4;
+		_layerData[2].RenderX = 0;
+	}
 
 	uint16_t screenWidth = mode == 5 ? 160 : 240;
 	uint16_t screenHeight = mode == 5 ? 128 : 160;
 
 	uint32_t base = (_state.DisplayFrameSelect && (mode == 4 || mode == 5)) ? 0xA000 : 0;
 
-	constexpr int gap = 35;
+	constexpr int gap = 34;
 	int cycle = std::max(0, _lastRenderCycle + 1 - gap);
-	int end = std::min<int>(_state.Cycle, 1006) - gap;
+	int end = std::min<int>(_state.Cycle, 1005) - gap;
 
 	for(; cycle <= end; cycle++) {
 		if(!(cycle & 0x03)) {
@@ -739,21 +803,30 @@ void GbaPpu::RenderBitmapMode()
 			cycle += 2;
 		}
 	}
+
+	if(_state.Cycle == 1006) {
+		//Update x/y values for next scanline
+		if(!layer.Mosaic) {
+			cfg.LatchOriginX += cfg.Matrix[1];
+			cfg.LatchOriginY += cfg.Matrix[3];
+		} else if(_state.Scanline % (_state.BgMosaicSizeY + 1) == _state.BgMosaicSizeY) {
+			cfg.LatchOriginX += cfg.Matrix[1] * (_state.BgMosaicSizeY + 1);
+			cfg.LatchOriginY += cfg.Matrix[3] * (_state.BgMosaicSizeY + 1);
+		}
+	}
 }
 
-//TODOGBA What should shape "3" do?
-//Making shape 3 behave like shape 0 causes glitches in Gauntlet (because unused sprites have all of their attributes set to 0xFF)
-//Making all sizes for shape 3 be 8x8 fixes the glitches in Gauntlet (but this hasn't been verified on hardware)
+//TODOGBA behavior for shape == 3? current behaves like shape == 0
 static constexpr uint8_t _sprSize[4][4][2] = {
 	{ { 8, 8 }, { 16, 8 }, { 8, 16 }, { 8, 8 } },
-	{ { 16, 16 }, { 32, 8 }, { 8, 32 }, { 8, 8 } },
-	{ { 32, 32 }, { 32, 16 }, { 16, 32 }, { 8, 8 } },
-	{ { 64, 64 }, { 64, 32 }, { 32, 64 }, { 8, 8 } }
+	{ { 16, 16 }, { 32, 8 }, { 8, 32 }, { 16, 16 } },
+	{ { 32, 32 }, { 32, 16 }, { 16, 32 }, { 32, 32 } },
+	{ { 64, 64 }, { 64, 32 }, { 32, 64 }, { 64, 64 } }
 };
 
 void GbaPpu::ProcessSprites()
 {
-	if(!_emu->GetSettings()->GetGbaConfig().DisableSprites && _state.ObjLayerEnabled && (_state.Scanline <= 159 || _state.Scanline == _lastScanline)) {
+	if(!_emu->GetSettings()->GetGbaConfig().DisableSprites && _state.ObjLayerEnabled && (_state.Scanline <= 159 || _state.Scanline == 227)) {
 		if(_state.BgMode >= 3) {
 			RenderSprites<true>();
 		} else {
@@ -764,17 +837,13 @@ void GbaPpu::ProcessSprites()
 
 void GbaPpu::InitSpriteEvaluation()
 {
-	_oamScanline = _state.Scanline == _lastScanline ? 0 : (_state.Scanline + 1);
+	_oamScanline = _state.Scanline == 227 ? 0 : (_state.Scanline + 1);
 	if(_oamScanline == 0) {
 		_oamMosaicY = 0;
-		_oamMosaicScanline = 0;
 	} else {
 		if(_oamMosaicY == _state.ObjMosaicSizeY) {
 			_oamMosaicY = 0;
-			_oamMosaicScanline = _oamScanline;
 		} else {
-			//Counter wrapping back to 0 apparently does not update the scanline number used for Y mosaic calculations.
-			//This is needed to get the correct result in the sprite-vmosaic test rom
 			_oamMosaicY = (_oamMosaicY + 1) & 0x0F;
 		}
 	}
@@ -812,11 +881,7 @@ void GbaPpu::AddVisibleSprite(uint32_t sprData)
 	spr.Width = _sprSize[spr.Size][spr.Shape][0];
 	spr.Mosaic = sprData & 0x1000;
 	if(spr.Mosaic) {
-		spr.YOffset = _oamMosaicScanline - spr.SpriteY;
-		uint8_t sprHeight = (spr.Height << (uint8_t)spr.DoubleSize);
-		if(spr.YOffset >= sprHeight) {
-			spr.YOffset = 0;
-		}
+		spr.YOffset = std::max(0, (int)spr.YOffset - (int)_oamMosaicY);
 	}
 
 	spr.Bpp8Mode = sprData & 0x2000;
@@ -895,25 +960,25 @@ void GbaPpu::RenderSprites()
 	}
 
 	uint16_t ppuCycle = _state.Cycle >= 308 * 4 ? (308 * 4) - 1 : _state.Cycle;
-	if(_state.AllowHblankOamAccess && ppuCycle > 999) {
+	if(_state.AllowHblankOamAccess && ppuCycle > 996) {
 		//Evaluation stops just before hblank when this is enabled
-		ppuCycle = 999;
+		ppuCycle = 996;
 	}
 	int cycle = _oamLastCycle + 1;
 
-	if(cycle < 41 && (_state.AllowHblankOamAccess || _evalOamIndex >= 128 || _state.ObjEnableTimer > 0)) {
+	if(cycle < 40 && (_state.AllowHblankOamAccess || _evalOamIndex >= 128 || _state.ObjEnableTimer > 0)) {
 		//Evaluation in hblank is disabled, jump to cycle 40 (eval start)
-		cycle = 41;
-	} else if(cycle >= 41 && _state.ObjEnableTimer > 0) {
+		cycle = 40;
+	} else if(cycle >= 40 && _state.ObjEnableTimer > 0) {
 		return;
 	}
 
-	if(!(cycle & 0x01)) {
+	if(cycle & 0x01) {
 		cycle++;
 	}
 	GbaSpriteRendererData& spr = _objData[0];
 	for(; cycle <= ppuCycle; cycle+=2) {
-		if(cycle == 41) {
+		if(cycle == 40) {
 			//start oam evaluation/fetching
 			InitSpriteEvaluation();
 			if(_oamScanline == 160 || _state.ObjEnableTimer > 0) {
@@ -933,9 +998,8 @@ void GbaPpu::RenderSprites()
 				_loadOamTileCounter--;
 				_memoryAccess[cycle] |= GbaPpuMemAccess::VramObj;
 
-				//Last cycle (40) doesn't actually draw, but cycle 39 does read from VRAM anyway (Sprite_Last_VRAM_Access test)
-				//When hblank access flag is set, pixel output stops on cycle 998 (and last read is on cycle 999)  (Sprite_Last_VRAM_Access_Free test)
-				if((!_state.AllowHblankOamAccess && cycle != 39) || (_state.AllowHblankOamAccess && cycle < 999)) {
+				//Last cycle (39) doesn't actually draw, but cycle 38 does read from VRAM anyway
+				if(cycle != 38) {
 					if(_objData[1].TransformEnabled) {
 						RenderSprite<true, blockFirst16k>(_objData[1]);
 					} else {
@@ -945,9 +1009,9 @@ void GbaPpu::RenderSprites()
 
 				if(_evalOamIndex >= 128 && _loadOamTileCounter == 0) {
 					//Finished loading last sprite
-					if(cycle < 41) {
+					if(cycle < 40) {
 						//Jump to the start of the next evaluation cycle (cycle 40)
-						cycle = 39;
+						cycle = 38;
 						continue;
 					} else {
 						break;
@@ -962,9 +1026,9 @@ void GbaPpu::RenderSprites()
 			if(_evalOamIndex >= 128) {
 				if(_loadOamTileCounter == 0) {
 					//Finished loading last sprite
-					if(cycle < 41) {
+					if(cycle < 40) {
 						//Jump to the start of the next evaluation cycle (cycle 40)
-						cycle = 39;
+						cycle = 38;
 						continue;
 					} else {
 						break;
@@ -1111,114 +1175,34 @@ void GbaPpu::SetTransformOrigin(uint8_t i, uint8_t value, bool setY)
 	}
 }
 
-template<int i>
-inline void GbaPpu::UpdateLayerTransform()
-{
-	//This appears to run on or around cycle 6, based on the "bgpd" test
-	if(_lastRenderCycle >= 6 || _state.Cycle < 6) {
-		return;
-	}
-
-	GbaTransformConfig& cfg = _state.Transform[i - 2];
-	GbaBgConfig& layer = _state.BgLayers[i];
-
-	//Update x/y values for next scanline for transform layers
-	if(cfg.NeedInit) {
-		cfg.LatchOriginX = (int32_t)cfg.OriginX;
-		cfg.LatchOriginY = (int32_t)cfg.OriginY;
-		cfg.NeedInit = false;
-	} else if(!layer.Mosaic) {
-		cfg.LatchOriginX += cfg.Matrix[1];
-		cfg.LatchOriginY += cfg.Matrix[3];
-	} else if((_state.Scanline - 1) % (_state.BgMosaicSizeY + 1) == _state.BgMosaicSizeY) {
-		cfg.LatchOriginX += cfg.Matrix[1] * (_state.BgMosaicSizeY + 1);
-		cfg.LatchOriginY += cfg.Matrix[3] * (_state.BgMosaicSizeY + 1);
-	}
-
-	if(cfg.PendingUpdateX) {
-		cfg.LatchOriginX = (cfg.OriginX << 4) >> 4; //sign extend
-		cfg.PendingUpdateX = false;
-	}
-
-	if(cfg.PendingUpdateY) {
-		cfg.LatchOriginY = (cfg.OriginY << 4) >> 4; //sign extend
-		cfg.PendingUpdateY = false;
-	}
-
-	//Init transform start position
-	_layerData[i].TransformX = (cfg.LatchOriginX << 4) >> 4; //sign extend
-	_layerData[i].TransformY = (cfg.LatchOriginY << 4) >> 4;
-	_layerData[i].RenderX = 0;
-}
-
-void GbaPpu::ProcessLayerToggleDelay()
-{
-	//NOTE: Exact timing hasn't been verified
-	//The mGBA Suite "Layer toggle 2" test works properly between cycles 31-40
-	//The mGBA Suite "Layer toggle" test is a lot more lenient (writes around H=1065)
-	//"Spyro - Season of Ice" disables all layers on H=29 and enables layers 0+1 on H=32 , and expects the layer to be enabled 2 scanlines later
-	//So values between 33 and 40 currently work for all 3 test cases above
-	if(_lastRenderCycle >= 37 || _state.Cycle < 37) {
-		return;
-	}
-
-	for(int i = 0; i < 4; i++) {
-		if(_state.BgLayers[i].EnableTimer && --_state.BgLayers[i].EnableTimer == 0) {
-			_state.BgLayers[i].Enabled = true;
-		}
-
-		if(_state.BgLayers[i].DisableTimer && --_state.BgLayers[i].DisableTimer == 0) {
-			_state.BgLayers[i].Enabled = false;
-		}
-	}
-}
-
 void GbaPpu::SetLayerEnabled(int layer, bool enabled)
 {
-	//"Layer toggle 2" test seems to imply that fully disabling a layer has a delay and that
-	//re-enabling the layer after disabling it can cause rendering for that layer to resume
-	//mid-scanline, until the layer gets fully disabled (and then re-enabled again after
-	//a delay because it was re-enabled)
-	if(enabled && _state.BgLayers[layer].EnableTimer == 0) {
-		_state.BgLayers[layer].EnableTimer = 3;
-		if(_state.BgLayers[layer].DisableTimer == 3) {
-			_state.BgLayers[layer].DisableTimer = 0;
-		}
-	} else if(!enabled && _state.BgLayers[layer].DisableTimer == 0) {
-		_state.BgLayers[layer].DisableTimer = 3;
-		if(_state.BgLayers[layer].EnableTimer == 3) {
-			_state.BgLayers[layer].EnableTimer = 0;
-		}
+	if(_state.BgLayers[layer].Enabled || !enabled) {
+		_state.BgLayers[layer].Enabled = enabled;
+		_state.BgLayers[layer].EnableTimer = 0;
+	} else if(_state.BgLayers[layer].EnableTimer == 0) {
+		_state.BgLayers[layer].EnableTimer = 2;
 	}
 }
 
 void GbaPpu::WriteRegister(uint32_t addr, uint8_t value)
 {
-	if(_lastRenderCycle != _state.Cycle && (_state.Scanline < 160 || _state.Scanline == _lastScanline)) {
+	if(_lastRenderCycle != _state.Cycle && (_state.Scanline < 160 || _state.Scanline == 227)) {
 		if(_state.Cycle < 1006 || addr <= 0x01 || addr == 0x4D || addr >= 0x40 && addr <= 0x43) {
 			//Only run renderer during active rendering (< 1006), or if the write could affect sprites/window processing
 			RenderScanline(true);
 		}
-	} else {
-		_lastRenderCycle = _state.Cycle;
 	}
 
 	switch(addr) {
-		case 0x00: {
+		case 0x00:
 			_state.Control = value & ~0x08;
 			_state.BgMode = value & 0x07;
 			_state.DisplayFrameSelect = value & 0x10;
 			_state.AllowHblankOamAccess = value & 0x20;
 			_state.ObjVramMappingOneDimension = value & 0x40;
-			bool forcedBlank = value & 0x80;
-			if(!forcedBlank && _state.ForcedBlank) {
-				//dispcnt-latch test implies that re-enabling video output after
-				//disabling it takes ~2 scanlines
-				_state.ForcedBlankDisableTimer = _state.Scanline >= 160 ? 0 : 2;
-			}
-			_state.ForcedBlank = forcedBlank;
+			_state.ForcedBlank = value & 0x80;
 			break;
-		}
 
 		case 0x01: {
 			_state.Control2 = value;
@@ -1384,31 +1368,6 @@ void GbaPpu::WriteRegister(uint32_t addr, uint8_t value)
 	}
 }
 
-uint16_t GbaPpu::GetCurrentScanline()
-{
-	if(_vblankStartScanline == 160) {
-		//No overclocking
-		return _state.Scanline;
-	} else if(_state.Scanline < 160) {
-		return _state.Scanline;
-	} else if(_state.Scanline < _vblankStartScanline) {
-		//Pretend to be on scanline 159 for all overclock scanlines
-		return 159;
-	} else {
-		return _state.Scanline - _vblankStartScanline + 160;
-	}
-}
-
-bool GbaPpu::IsScanlineMatch()
-{
-	uint32_t scanline = GetCurrentScanline();
-	if(_state.Cycle == 0) {
-		return (scanline == 0 ? 227 : (scanline - 1)) == _state.Lyc;
-	} else {
-		return scanline == _state.Lyc;
-	}
-}
-
 uint8_t GbaPpu::ReadRegister(uint32_t addr)
 {
 	switch(addr) {
@@ -1418,18 +1377,17 @@ uint8_t GbaPpu::ReadRegister(uint32_t addr)
 		case 0x02: return (uint8_t)_state.StereoscopicEnabled;
 		case 0x03: return 0;
 
-		case 0x04: {
-			uint16_t scanline = GetCurrentScanline();
+		case 0x04:
 			return (
-				(scanline >= 160 && scanline != _lastScanline ? 0x01 : 0) |
-				(_state.Cycle >= 1007 ? 0x02 : 0) |
-				(IsScanlineMatch() ? 0x04 : 0) |
+				(_state.Scanline >= 160 && _state.Scanline != 227 ? 0x01 : 0) |
+				((_state.Cycle > 1007 || _state.Cycle == 0) ? 0x02 : 0) |
+				(_state.Scanline == _state.Lyc ? 0x04 : 0) |
 				_state.DispStat
 			);
-		}
 
 		case 0x05: return _state.Lyc;
-		case 0x06: return GetCurrentScanline();
+
+		case 0x06: return _state.Scanline;
 		case 0x07: return 0;
 
 		case 0x08: case 0x0A: case 0x0C: case 0x0E:
@@ -1460,12 +1418,7 @@ void GbaPpu::DebugProcessMemoryAccessView()
 {
 	//Store memory access buffer in ppu tools to display in tilemap viewer
 	GbaPpuTools* ppuTools = ((GbaPpuTools*)_emu->InternalGetDebugger()->GetPpuTools(CpuType::Gba));
-	//Skip vblank scanlines (except last scanline) to avoid issues with overclock
-	if(_state.Scanline < 160) {
-		ppuTools->SetMemoryAccessData(_state.Scanline, _memoryAccess);
-	} else  if(_state.Scanline == _lastScanline) {
-		ppuTools->SetMemoryAccessData(227, _memoryAccess);
-	}
+	ppuTools->SetMemoryAccessData(_state.Scanline, _memoryAccess);
 }
 
 void GbaPpu::Serialize(Serializer& s)
@@ -1480,7 +1433,6 @@ void GbaPpu::Serialize(Serializer& s)
 	SV(_state.AllowHblankOamAccess);
 	SV(_state.ObjVramMappingOneDimension);
 	SV(_state.ForcedBlank);
-	SV(_state.ForcedBlankDisableTimer);
 	SV(_state.StereoscopicEnabled);
 
 	SV(_state.Control2);
@@ -1510,6 +1462,7 @@ void GbaPpu::Serialize(Serializer& s)
 		SVI(_state.BgLayers[i].TilemapAddr);
 		SVI(_state.BgLayers[i].TilesetAddr);
 		SVI(_state.BgLayers[i].ScrollX);
+		SVI(_state.BgLayers[i].ScrollXLatch);
 		SVI(_state.BgLayers[i].ScrollY);
 		SVI(_state.BgLayers[i].ScreenSize);
 		SVI(_state.BgLayers[i].DoubleWidth);
@@ -1520,7 +1473,6 @@ void GbaPpu::Serialize(Serializer& s)
 		SVI(_state.BgLayers[i].Bpp8Mode);
 		SVI(_state.BgLayers[i].Enabled);
 		SVI(_state.BgLayers[i].EnableTimer);
-		SVI(_state.BgLayers[i].DisableTimer);
 		SVI(_state.BgLayers[i].StereoMode);
 	}
 	
@@ -1531,7 +1483,6 @@ void GbaPpu::Serialize(Serializer& s)
 		SVI(_state.Transform[i].LatchOriginY);
 		SVI(_state.Transform[i].PendingUpdateX);
 		SVI(_state.Transform[i].PendingUpdateY);
-		SVI(_state.Transform[i].NeedInit);
 		SVI(_state.Transform[i].Matrix[0]);
 		SVI(_state.Transform[i].Matrix[1]);
 		SVI(_state.Transform[i].Matrix[2]);
@@ -1612,7 +1563,6 @@ void GbaPpu::Serialize(Serializer& s)
 		SV(_loadObjMatrix);
 		SV(_oamScanline);
 		SV(_oamMosaicY);
-		SV(_oamMosaicScanline);
 
 		for(int i = 0; i < 4; i++) {
 			SVI(_layerData[i].TilemapData);
@@ -1620,7 +1570,6 @@ void GbaPpu::Serialize(Serializer& s)
 			SVI(_layerData[i].FetchAddr);
 			SVI(_layerData[i].TileIndex);
 			SVI(_layerData[i].RenderX);
-			SVI(_layerData[i].NextLoad);
 			SVI(_layerData[i].TransformX);
 			SVI(_layerData[i].TransformY);
 			SVI(_layerData[i].XPos);

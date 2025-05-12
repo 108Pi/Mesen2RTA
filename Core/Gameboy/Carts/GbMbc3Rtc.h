@@ -29,6 +29,11 @@ public:
 		Init();
 	}
 
+	~GbMbc3Rtc()
+	{
+		SaveBattery();
+	}
+
 	void Init()
 	{
 		_lastMasterClock = 0;
@@ -112,8 +117,6 @@ public:
 							_regs[3] = 0;
 							_regs[4] &= ~0x01;
 							_regs[4] |= 0x80; //set overflow
-						} else {
-							_regs[3]++;
 						}
 					}
 				}

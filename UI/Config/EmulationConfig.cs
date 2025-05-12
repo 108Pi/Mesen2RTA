@@ -16,15 +16,13 @@ namespace Mesen.Config
 		[Reactive] [MinMax(0, 5000)] public UInt32 TurboSpeed { get; set; } = 300;
 		[Reactive] [MinMax(0, 5000)] public UInt32 RewindSpeed { get; set; } = 100;
 
-		[Reactive] [MinMax(0, 10)] public UInt32 RunAheadFrames { get; set; } = 0;
 		
 		public void ApplyConfig()
 		{
 			ConfigApi.SetEmulationConfig(new InteropEmulationConfig() {
 				EmulationSpeed = this.EmulationSpeed,
 				TurboSpeed = this.TurboSpeed,
-				RewindSpeed = this.RewindSpeed,
-				RunAheadFrames = this.RunAheadFrames
+				RewindSpeed = this.RewindSpeed
 			});
 		}
 	}
@@ -36,7 +34,6 @@ namespace Mesen.Config
 		public UInt32 TurboSpeed;
 		public UInt32 RewindSpeed;
 
-		public UInt32 RunAheadFrames;
 	}
 
 	public enum ConsoleRegion

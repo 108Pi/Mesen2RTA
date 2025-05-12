@@ -95,6 +95,12 @@
 			https://nuget-feed-nightly.avaloniaui.net/v3/index.json;https://api.nuget.org/v3/index.json
 		</RestoreSources>
 	</PropertyGroup>
+	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+	  <DebugType>embedded</DebugType>
+	</PropertyGroup>
+	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
+	  <DebugType>embedded</DebugType>
+	</PropertyGroup>
 	<ItemGroup>
 		<TrimmerRootAssembly Include="Mesen" />
 		<TrimmerRootAssembly Include="AvaloniaEdit" />

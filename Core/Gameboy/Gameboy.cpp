@@ -171,7 +171,6 @@ void Gameboy::SaveBattery()
 	if(_hasBattery) {
 		_emu->GetBatteryManager()->SaveBattery(".srm", _cartRam, _cartRamSize);
 	}
-	_cart->SaveBattery();
 }
 
 GbState Gameboy::GetState()

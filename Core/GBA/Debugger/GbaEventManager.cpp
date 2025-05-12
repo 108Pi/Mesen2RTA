@@ -171,7 +171,7 @@ uint32_t GbaEventManager::TakeEventSnapshot(bool forAutoRefresh)
 	_snapshotScanline = scanline;
 	_snapshotCycle = cycle;
 	_forAutoRefresh = forAutoRefresh;
-	_scanlineCount = _ppu->GetScanlineCount();
+	_scanlineCount = GbaEventManager::ScreenHeight;
 	return _scanlineCount;
 }
 

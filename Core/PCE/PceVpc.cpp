@@ -155,9 +155,7 @@ void PceVpc::ProcessStartFrame()
 		_frameSkipTimer.Reset();
 	}
 
-	if(_emu->IsRunAheadFrame()) {
-		_skipRender = true;
-	} else {
+
 		_skipRender = (
 			!_emu->GetSettings()->GetPcEngineConfig().DisableFrameSkipping &&
 			!_emu->GetRewindManager()->IsRewinding() &&
@@ -165,7 +163,7 @@ void PceVpc::ProcessStartFrame()
 			(_emu->GetSettings()->GetEmulationSpeed() == 0 || _emu->GetSettings()->GetEmulationSpeed() > 150) &&
 			_frameSkipTimer.GetElapsedMS() < 10
 		);
-	}
+
 }
 
 void PceVpc::ProcessScanlineStart(PceVdc* vdc, uint16_t scanline)

@@ -69,7 +69,7 @@ SmsDebugger::~SmsDebugger()
 	_codeDataLogger->SaveCdlFile(_cdlFile);
 }
 
-void SmsDebugger::OnBeforeBreak(CpuType cpuType)
+void SmsDebugger::OnBeforeBreak()
 {
 	_console->GetPsg()->Run();
 }

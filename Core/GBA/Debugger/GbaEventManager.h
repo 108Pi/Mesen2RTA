@@ -1,6 +1,5 @@
 #pragma once
 #include "pch.h"
-#include "GBA/GbaTypes.h"
 #include "Debugger/DebugTypes.h"
 #include "Debugger/BaseEventManager.h"
 #include "Utilities/SimpleLock.h"
@@ -57,7 +56,9 @@ class GbaEventManager final : public BaseEventManager
 {
 private:
 	static constexpr int ScanlineWidth = 308*4;
-	
+	static constexpr int ScreenHeight = 228;
+	static constexpr int VBlankScanline = 160;
+
 	GbaEventViewerConfig _config = {};
 
 	GbaPpu* _ppu = nullptr;
@@ -66,7 +67,7 @@ private:
 	GbaDmaController* _dmaController = nullptr;
 	Debugger* _debugger = nullptr;
 
-	uint32_t _scanlineCount = GbaConstants::ScanlineCount;
+	uint32_t _scanlineCount = GbaEventManager::ScreenHeight;
 	uint16_t* _ppuBuffer = nullptr;
 
 protected:

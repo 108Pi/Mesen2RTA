@@ -30,22 +30,26 @@ uint32_t PcePsgChannel::GetNoisePeriod()
 
 uint32_t PcePsgChannel::GetPeriod()
 {
-	uint32_t period = _state.Frequency;
+	if(_state.DdaEnabled) {
+		return 0;
+	} else {
+		uint32_t period = _state.Frequency;
 
-	if(_chIndex == 0 && _psg->IsLfoEnabled()) {
-		//When enabled, LFO alters channel 1's frequency/period
-		period = (period + _psg->GetLfoCh1PeriodOffset()) & 0xFFF;
+		if(_chIndex == 0 && _psg->IsLfoEnabled()) {
+			//When enabled, LFO alters channel 1's frequency/period
+			period = (period + _psg->GetLfoCh1PeriodOffset()) & 0xFFF;
+		}
+
+		period = period ? period : 0x1000;
+
+		if(_chIndex == 1 && _psg->IsLfoEnabled()) {
+			//When enabled, LFO acts as a clock divider for channel 2
+			//which reduces its frequency (increases its period)
+			period *= _psg->GetLfoFrequency();
+		}
+
+		return period;
 	}
-
-	period = period ? period : 0x1000;
-
-	if(_chIndex == 1 && _psg->IsLfoEnabled()) {
-		//When enabled, LFO acts as a clock divider for channel 2
-		//which reduces its frequency (increases its period)
-		period *= _psg->GetLfoFrequency();
-	}
-
-	return period;
 }
 
 void PcePsgChannel::Run(uint32_t clocks)
@@ -81,10 +85,10 @@ void PcePsgChannel::Run(uint32_t clocks)
 
 			if(_state.Timer == 0) {
 				_state.Timer = GetPeriod();
-				_state.WaveAddr = (_state.WaveAddr + 1) & 0x1F;
+				_state.ReadAddr = (_state.ReadAddr + 1) & 0x1F;
 			}
 
-			_state.CurrentOutput = (int8_t)_state.WaveData[_state.WaveAddr] - _outputOffset;
+			_state.CurrentOutput = (int8_t)_state.WaveData[_state.ReadAddr] - _outputOffset;
 		} else {
 			_state.CurrentOutput = _state.NoiseOutput - _outputOffset;
 		}
@@ -127,16 +131,16 @@ void PcePsgChannel::Write(uint16_t addr, uint8_t value)
 				_state.Timer = GetPeriod();
 				_state.Enabled = (value & 0x80) != 0;
 			}
-			
+
 			_state.DdaEnabled = (value & 0x40) != 0;
 			_state.Amplitude = (value & 0x1F);
-
+			
 			if(_state.DdaEnabled) {
 				if(_state.Enabled) {
 					//Update channel output immediately when DDA is enabled
 					_state.CurrentOutput = (int8_t)_state.DdaOutputValue - _outputOffset;
 				} else {
-					_state.WaveAddr = 0;
+					_state.WriteAddr = 0;
 				}
 			}
 			break;
@@ -153,23 +157,9 @@ void PcePsgChannel::Write(uint16_t addr, uint8_t value)
 					//Update channel output immediately with the new value when DDA is enabled
 					_state.CurrentOutput = (int8_t)_state.DdaOutputValue - _outputOffset;
 				}
-			} else {
-				//Updating wave data is allowed when the channel is enabled
-				//This updates the currently playing sample (both in the wave
-				//data and the channel's current output)
-				//This is needed for Fire Pro Wrestling - 2nd Bout's HES rip, track 25
-				_state.WaveData[_state.WaveAddr] = value & 0x1F;
-
-				if(!_state.Enabled) {
-					//Only increment the address when the channel is not playing
-					_state.WaveAddr = (_state.WaveAddr + 1) & 0x1F;
-				}
-
-				if(!_state.NoiseEnabled) {
-					//Not in DDA/Noise mode - updating the sample should also
-					//update the channel's output
-					_state.CurrentOutput = (int8_t)_state.WaveData[_state.WaveAddr] - _outputOffset;
-				}
+			} else if(!_state.Enabled) {
+				_state.WaveData[_state.WriteAddr] = value & 0x1F;
+				_state.WriteAddr = (_state.WriteAddr + 1) & 0x1F;
 			}
 			break;
 
@@ -194,9 +184,10 @@ void PcePsgChannel::Serialize(Serializer& s)
 	SV(_state.NoiseLfsr);
 	SV(_state.NoiseOutput);
 	SV(_state.NoiseTimer);
-	SV(_state.WaveAddr);
+	SV(_state.ReadAddr);
 	SV(_state.RightVolume);
 	SV(_state.Timer);
+	SV(_state.WriteAddr);
 
 	SVArray(_state.WaveData, 0x20);
 }

@@ -57,7 +57,7 @@ public:
 	SmsDebugger(Debugger* debugger);
 	~SmsDebugger();
 
-	void OnBeforeBreak(CpuType cpuType) override;
+	void OnBeforeBreak() override;
 	void Reset() override;
 
 	void ProcessInstruction();

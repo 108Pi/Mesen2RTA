@@ -379,8 +379,6 @@ struct EmulationConfig
 	uint32_t EmulationSpeed = 100;
 	uint32_t TurboSpeed = 300;
 	uint32_t RewindSpeed = 100;
-
-	uint32_t RunAheadFrames = 0;
 };
 
 struct OverscanDimensions
@@ -463,8 +461,6 @@ struct GbaConfig
 
 	bool HideBgLayers[4] = {};
 	bool DisableSprites = false;
-	
-	uint32_t OverclockScanlineCount = 0;
 
 	RamState RamPowerOnState = RamState::AllZeros;
 	GbaSaveType SaveType = GbaSaveType::AutoDetect;

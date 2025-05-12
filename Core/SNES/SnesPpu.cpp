@@ -496,10 +496,7 @@ bool SnesPpu::ProcessEndOfScanline(uint16_t& hClock)
 				(_settings->GetEmulationSpeed() == 0 || _settings->GetEmulationSpeed() > 150) &&
 				_frameSkipTimer.GetElapsedMS() < 10
 			);
-			
-			if(_emu->IsRunAheadFrame()) {
-				_skipRender = true;
-			}
+
 
 			//Ensure the SPC is re-enabled for the next frame
 			_spc->SetSpcState(true);

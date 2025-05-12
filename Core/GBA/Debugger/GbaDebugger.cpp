@@ -70,7 +70,7 @@ GbaDebugger::~GbaDebugger()
 	_codeDataLogger->SaveCdlFile(_cdlFile);
 }
 
-void GbaDebugger::OnBeforeBreak(CpuType cpuType)
+void GbaDebugger::OnBeforeBreak()
 {
 	_console->GetApu()->Run();
 }

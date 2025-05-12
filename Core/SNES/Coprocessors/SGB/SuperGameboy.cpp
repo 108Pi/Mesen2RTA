@@ -119,7 +119,6 @@ void SuperGameboy::Write(uint32_t addr, uint8_t value)
 			if(!(_control & 0x80) && (value & 0x80)) {
 				_clockOffset = 0;
 				_resetClock = _memoryManager->GetMasterClock();
-				_gameboy->SaveBattery();
 				_gameboy->PowerOn(this);
 			}
 			_control = value;
