@@ -475,6 +475,14 @@ void CheatManager::ApplyCheat(uint32_t addr, uint8_t& value)
 			}
 		}
 	}
+
+
+}
+
+
+bool CheatManager::HasCheats()
+{
+	return !_cheats.empty();
 }
 
 template void CheatManager::ApplyCheat<CpuType::Nes>(uint32_t addr, uint8_t& value);

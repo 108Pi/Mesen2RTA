@@ -107,7 +107,6 @@ private:
 	atomic<int> _debugRequestCount;
 	atomic<int> _blockDebuggerRequestCount;
 
-	atomic<bool> _isRunAheadFrame;
 	bool _frameRunning = false;
 
 	RomInfo _rom;
@@ -130,13 +129,14 @@ private:
 	//This is needed until the debugger tools are able to handle debugging 2 identical
 	//consoles at the same time.
 	bool _isDebuggerDisabled = false;
+	bool isMemUnclean = false;
+	void SetIsMemUnclean(bool state);
 
 	void WaitForLock();
 	void WaitForPauseEnd();
 
 	void ProcessAutoSaveState();
 	bool ProcessSystemActions();
-	void RunFrameWithRunAhead();
 
 	void BlockDebuggerRequests();
 	void ResetDebugger(bool startDebugger = false);
@@ -249,7 +249,6 @@ public:
 	AudioPlayerHud* GetAudioPlayerHud() { return _audioPlayerHud.get(); }
 
 	bool IsRunning() { return _console != nullptr; }
-	bool IsRunAheadFrame() { return _isRunAheadFrame; }
 
 	TimingInfo GetTimingInfo(CpuType cpuType);
 	uint32_t GetFrameCount();
@@ -263,7 +262,11 @@ public:
 	void UnregisterInputProvider(IInputProvider* provider);
 
 	double GetFps();
+	void ShowResetStatus(string type);
 
+	void SetIsUnclean(bool state);
+	bool GetIsUnclean();
+	
 	template<CpuType type> __forceinline void ProcessInstruction()
 	{
 		if(_internalDebugger) {

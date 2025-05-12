@@ -54,6 +54,7 @@ public:
 
 	uint32_t GetPollCounter();
 	void SetPollCounter(uint32_t value);
+	bool IsLagFrame();
 
 	void SaveBattery();
 

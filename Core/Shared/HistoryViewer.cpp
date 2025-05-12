@@ -210,3 +210,8 @@ void HistoryViewer::ProcessEndOfFrame()
 		rewindData.LoadState(_emu, _history, _position);
 	}
 }
+
+bool HistoryViewer::IsEndOfHistory()
+{
+	return(_position >= _history.size());
+}

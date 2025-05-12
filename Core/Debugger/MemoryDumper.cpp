@@ -251,6 +251,7 @@ void MemoryDumper::InternalSetMemoryValues(MemoryType originalMemoryType, uint32
 	UndoEntry undoEntry = { MemoryType::None };
 
 	Disassembler* disassembler = _debugger->GetDisassembler();
+	_emu->SetIsUnclean(true);
 
 	for(uint32_t i = 0; i < length; i++) {
 		uint32_t address = startAddress + i;

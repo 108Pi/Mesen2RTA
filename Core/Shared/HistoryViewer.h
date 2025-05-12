@@ -52,6 +52,7 @@ public:
 	void ResumeGameplay(uint32_t resumePosition);
 
 	void ProcessEndOfFrame();
+	bool IsEndOfHistory();
 
 	// Inherited via IInputProvider
 	bool SetInput(BaseControlDevice* device) override;

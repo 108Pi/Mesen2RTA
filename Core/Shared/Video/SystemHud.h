@@ -34,7 +34,7 @@ private:
 	void DisplayMessage(string title, string message) override;
 
 	void ShowFpsCounter(DebugHud* hud, uint32_t screenWidth, int lineNumber) const;
-	void ShowFrameCounter(DebugHud* hud, uint32_t screenWidth, int lineNumber) const;
+	void ShowFrameCounter(DebugHud* hud, uint32_t screenWidth, int lineCount) const;
 	void ShowLagCounter(DebugHud* hud, uint32_t screenWidth, int lineNumber) const;
 	void ShowGameTimer(DebugHud* hud, uint32_t screenWidth, int lineNumber) const;
 

@@ -176,11 +176,11 @@ void BaseControlManager::UpdateInputState()
 
 	_emu->ProcessEvent(EventType::InputPolled, _cpuType);
 
-	if(!_emu->IsRunAheadFrame()) {
+	
 		for(IInputRecorder* recorder : _inputRecorders) {
 			recorder->RecordInput(_controlDevices);
 		}
-	}
+	
 
 	//MessageManager::Log(log);
 
@@ -241,4 +241,9 @@ void BaseControlManager::SaveBattery()
 			batteryDevice->SaveBattery();
 		}
 	}
+}
+
+bool BaseControlManager::IsLagFrame()
+{
+	return !_wasInputRead;
 }

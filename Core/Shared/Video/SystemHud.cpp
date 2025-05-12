@@ -5,6 +5,8 @@
 #include "Shared/MessageManager.h"
 #include "Shared/Video/DrawStringCommand.h"
 #include "Utilities/StringUtilities.h"
+#include "Shared/Interfaces/IMessageManager.h"
+#include "Shared/EmuSettings.h"
 
 SystemHud::SystemHud(Emulator* emu)
 {
@@ -24,23 +26,22 @@ void SystemHud::Draw(DebugHud* hud, uint32_t width, uint32_t height) const
 
 	if(_emu->IsRunning()) {
 		EmuSettings* settings = _emu->GetSettings();
-		bool showMovieIcons = settings->GetPreferences().ShowMovieIcons;
 		int xOffset = 0;
 		if(_emu->IsPaused()) {
 			DrawPauseIcon(hud);
-		} else if(showMovieIcons && _emu->GetMovieManager()->Playing()) {
+		} else if(_emu->GetMovieManager()->Playing()) {
 			DrawPlayIcon(hud);
 			xOffset += 12;
-		} else if(showMovieIcons && _emu->GetMovieManager()->Recording()) {
+		} else if(_emu->GetMovieManager()->Recording()) {
 			DrawRecordIcon(hud);
 			xOffset += 12;
 		}
 
-		bool showTurboRewindIcons = settings->GetPreferences().ShowTurboRewindIcons;
-		if(!_emu->IsPaused() && showTurboRewindIcons) {
-			if(settings->CheckFlag(EmulationFlags::Rewind)) {
+		if(!_emu->IsPaused()) {
+			int emuSpeed = settings->GetEmulationSpeed();
+			if(settings->CheckFlag(EmulationFlags::Rewind) || emuSpeed < 100) {
 				DrawTurboRewindIcon(hud, true, xOffset);
-			} else if(settings->CheckFlag(EmulationFlags::Turbo)) {
+			} else if(settings->CheckFlag(EmulationFlags::Turbo) || emuSpeed > 100 || emuSpeed == 0) {
 				DrawTurboRewindIcon(hud, false, xOffset);
 			}
 		}
@@ -51,14 +52,14 @@ void SystemHud::DrawMessage(DebugHud* hud, MessageInfo& msg, uint32_t screenWidt
 {
 	//Get opacity for fade in/out effect
 	uint8_t opacity = (uint8_t)(msg.GetOpacity() * 255);
-	int textLeftMargin = 4;
+	int textRightMargin = 4;
 
 	string text = "[" + msg.GetTitle() + "] " + msg.GetMessage();
 
-	int maxWidth = screenWidth - textLeftMargin;
+	int maxWidth = screenWidth - textRightMargin;
 	TextSize size = DrawStringCommand::MeasureString(text, maxWidth);
 	lastHeight += size.Y;
-	DrawString(hud, screenWidth, text, textLeftMargin, screenHeight - lastHeight, opacity);
+	DrawString(hud, screenWidth, text, screenWidth - textRightMargin - size.X, screenHeight - lastHeight, opacity);
 }
 
 void SystemHud::DrawString(DebugHud* hud, uint32_t screenWidth, string text, int x, int y, uint8_t opacity) const
