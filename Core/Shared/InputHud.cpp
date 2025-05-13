@@ -10,7 +10,7 @@
 #include "Shared/CheatManager.h"
 #include "Shared/HistoryViewer.h"
 
-static constexpr int colors[3] = { 0x00111111, 0x00117111, 0x00711111 };
+static constexpr int colors[4] = { 0x00111111, 0x00117111, 0x00711111 , 0x007F0072};
 static int bgColor = 0x00A9A9A9;
 int prevLagCount = 0;
 
@@ -31,13 +31,13 @@ void InputHud::DrawButton(int x, int y, int width, int height, bool pressed)
 
 void InputHud::DrawNumber(int number, int x, int y)
 {
-	 x += _xOffset;
-	 y += _yOffset;
-	
-	 int numColor = colors[GetSettingColor()];
-	 if(_emu->GetConsole()->GetControlManager()->IsLagFrame()) {
-		 numColor = 0x00BB1111;
-	 }
+	x += _xOffset;
+	y += _yOffset;
+
+	int numColor = colors[GetSettingColor()];
+	if(_emu->GetConsole()->GetControlManager()->IsLagFrame()) {
+		numColor = 0x00BB1111;
+	}
 
 	_hud->DrawRectangle(x, y, 4, 5, numColor, true, 1);
 	switch(number) {
@@ -107,7 +107,7 @@ void InputHud::DrawMousePosition(MousePosition pos)
 	}
 }
 
-void InputHud::DrawOutline(int width, int height, int textX, int textY)
+void InputHud::DrawOutline(int width, int height, int textX, int textY, int startX, int startY)
 {
 	InputConfig& cfg = _emu->GetSettings()->GetInputConfig();
 
@@ -118,6 +118,7 @@ void InputHud::DrawOutline(int width, int height, int textX, int textY)
 
 		case InputDisplayPosition::TopRight:
 			_xOffset -= width + 1;
+			startX *= -1;
 			break;
 
 		case InputDisplayPosition::BottomLeft:
@@ -127,16 +128,17 @@ void InputHud::DrawOutline(int width, int height, int textX, int textY)
 		case InputDisplayPosition::BottomRight:
 			_yOffset -= height + 1;
 			_xOffset -= width + 1;
+			startX *= -1;
 			break;
 	}
 
 	int color = colors[GetSettingColor()];
 
-	_hud->DrawRectangle(_xOffset, _yOffset, width, height, bgColor, true, 1);
-	_hud->DrawRectangle(_xOffset, _yOffset, width, height, color, false, 1);
-	_hud->DrawLine(_xOffset + width - textX, _yOffset, _xOffset + width - 1, _yOffset, bgColor, 1);
-	_hud->DrawLine(_xOffset + width - 1 , _yOffset, _xOffset + width - 1, _yOffset + textY - 1, bgColor, 1);
-	
+	_hud->DrawRectangle(_xOffset + startX, _yOffset + startY, width, height, bgColor, true, 1);
+	_hud->DrawRectangle(_xOffset + startX, _yOffset + startY, width, height, color, false, 1);
+	_hud->DrawLine(_xOffset + width - textX + startX, _yOffset + startY, _xOffset + width - 1 + startX, _yOffset + startY, bgColor, 1);
+	_hud->DrawLine(_xOffset + width - 1 + startX, _yOffset + startY, _xOffset + width - 1 + startX, _yOffset + textY - 1 + startY, bgColor, 1);
+
 	_outlineWidth = width;
 	_outlineHeight = height;
 }
@@ -212,7 +214,7 @@ void InputHud::DrawControllers(FrameInfo size, vector<ControllerData> controller
 	}
 
 	InputConfig& cfg = _emu->GetSettings()->GetInputConfig();
-	
+
 	bool hasVisiblePort = false;
 	for(int i = 0; i < 8; i++) {
 		hasVisiblePort |= cfg.DisplayInputPort[i];
@@ -241,7 +243,7 @@ void InputHud::DrawControllers(FrameInfo size, vector<ControllerData> controller
 			_yOffset = size.Height - 1;
 			break;
 	}
-	
+
 	_controllerIndex = 0;
 	for(ControllerData& portData : controllerData) {
 		DrawController(portData, console->GetControlManager());
@@ -251,30 +253,51 @@ void InputHud::DrawControllers(FrameInfo size, vector<ControllerData> controller
 
 int InputHud::GetSettingColor()
 {
-	if(!_emu->GetHistoryViewer()->IsEndOfHistory()) return 2;
+	if(!_emu->GetHistoryViewer()->IsEndOfHistory()) {
+		return 2;
+	}
 
-	if(_emu->IsDebugging()) return 2;
+	if(_emu->IsDebugging()) {
+		return 2;
+	}
+
+	if(_emu->GetSettings()->GetVideoConfig().IntegerFpsMode) {
+		return 2;
+	}
 
 	if(_emu->GetMovieManager()->Playing()) {
+		return 2;
+	}
+
+	if(_emu->GetIsUnclean()) {
 		return 2;
 	}
 
 	CheatManager* cheats = _emu->GetCheatManager();
 	if(cheats->HasCheats()) return 1;
 
-	//TODO make specific to each console
-	NesConfig& cfg = _emu->GetSettings()->GetNesConfig();
+	//check overclocking feature - specific to each console
+	NesConfig& cfg_nes = _emu->GetSettings()->GetNesConfig();
+	SnesConfig& cfg_snes = _emu->GetSettings()->GetSnesConfig();
 
-	if(_emu->GetIsUnclean()) {
-		return 2;
+	if(&cfg_nes != NULL) {
+		if(cfg_nes.PpuExtraScanlinesBeforeNmi != 0 || cfg_nes.PpuExtraScanlinesAfterNmi != 0) {
+			return 2;
+		}
 	}
 
-	if(&cfg == NULL) {
-		return 0;
+	if(&cfg_snes != NULL) {
+		if(cfg_snes.PpuExtraScanlinesBeforeNmi != 0 || cfg_snes.PpuExtraScanlinesAfterNmi != 0) {
+			return 2;
+		}
+
+		if(cfg_snes.GsuClockSpeed != 100) {
+			return 2;
+		}
 	}
-	// check overclocking feature
-	if(cfg.PpuExtraScanlinesBeforeNmi != 0 || cfg.PpuExtraScanlinesAfterNmi != 0) {
-		return 2;
+
+	if(_emu->GetSettings()->GetEmulationConfig().RunAheadFrames != 0) {
+		return 3;
 	}
 
 	return 0;

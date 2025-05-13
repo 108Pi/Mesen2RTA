@@ -88,7 +88,7 @@ public:
 
 	bool AddCheat(CheatCode code);
 	void InternalClearCheats();
-	bool HasCheats();
+
 	void SetCheats(vector<CheatCode>& codes);
 	void SetCheats(CheatCode codes[], uint32_t length);
 	void ClearCheats(bool showMessage = true);
@@ -99,6 +99,7 @@ public:
 	
 	vector<InternalCheatCode>& GetRamRefreshCheats(CpuType cpuType);
 	void RefreshRamCheats(CpuType cpuType);
+	bool HasCheats();
 
 	template<CpuType cpuType>
 	__forceinline bool HasCheats()

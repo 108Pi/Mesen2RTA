@@ -69,6 +69,7 @@ Emulator::Emulator() :
 	_paused = false;
 	_pauseOnNextFrame = false;
 	_stopFlag = false;
+	_isRunAheadFrame = false;
 	_lockCounter = 0;
 	_threadPaused = false;
 
@@ -119,6 +120,7 @@ void Emulator::Run()
 	}
 
 	_stopFlag = false;
+	_isRunAheadFrame = false;
 
 	PlatformUtilities::EnableHighResolutionTimer();
 	PlatformUtilities::DisableScreensaver();
@@ -131,10 +133,15 @@ void Emulator::Run()
 	_lastFrameTimer.Reset();
 
 	while(!_stopFlag) {
-		_console->RunFrame();
-		_rewindManager->ProcessEndOfFrame();
-		_historyViewer->ProcessEndOfFrame();
-		ProcessSystemActions();
+		bool useRunAhead = _settings->GetEmulationConfig().RunAheadFrames > 0 && !_debugger && !_audioPlayerHud && !_rewindManager->IsRewinding() && _settings->GetEmulationSpeed() > 0 && _settings->GetEmulationSpeed() <= 100;
+		if(useRunAhead) {
+			RunFrameWithRunAhead();
+		} else {
+			_console->RunFrame();
+			_rewindManager->ProcessEndOfFrame();
+			_historyViewer->ProcessEndOfFrame();
+			ProcessSystemActions();
+		}
 
 		ProcessAutoSaveState();
 
@@ -194,10 +201,40 @@ bool Emulator::ProcessSystemActions()
 	return false;
 }
 
+void Emulator::RunFrameWithRunAhead()
+{
+	stringstream runAheadState;
+	uint32_t frameCount = _settings->GetEmulationConfig().RunAheadFrames;
+
+	//Run a single frame and save the state (no audio/video)
+	_isRunAheadFrame = true;
+	_console->RunFrame();
+	Serialize(runAheadState, false, 0);
+
+	while(frameCount > 1) {
+		//Run extra frames if the requested run ahead frame count is higher than 1
+		frameCount--;
+		_console->RunFrame();
+	}
+	_isRunAheadFrame = false;
+
+	//Run one frame normally (with audio/video output)
+	_console->RunFrame();
+	_rewindManager->ProcessEndOfFrame();
+	_historyViewer->ProcessEndOfFrame();
+
+	bool wasReset = ProcessSystemActions();
+	if(!wasReset) {
+		//Load the state we saved earlier
+		_isRunAheadFrame = true;
+		Deserialize(runAheadState, SaveStateManager::FileFormatVersion, false);
+		_isRunAheadFrame = false;
+	}
+}
 
 void Emulator::OnBeforeSendFrame()
 {
-
+	if(!_isRunAheadFrame) {
 		if(_audioPlayerHud) {
 			_audioPlayerHud->Draw(GetFrameCount(), GetFps());
 		}
@@ -207,10 +244,12 @@ void Emulator::OnBeforeSendFrame()
 			_lastFrameTimer.Reset();
 			_stats->DisplayStats(this, lastFrameTime);
 		}
+	}
 }
 
 void Emulator::ProcessEndOfFrame()
 {
+	if(!_isRunAheadFrame) {
 		_frameLimiter->ProcessFrame();
 		while(_frameLimiter->WaitForNextFrame()) {
 			if(_stopFlag || _frameDelay != GetFrameDelay() || _paused || _pauseOnNextFrame || _lockCounter > 0) {
@@ -226,6 +265,7 @@ void Emulator::ProcessEndOfFrame()
 		}
 
 		_console->GetControlManager()->ProcessEndOfFrame();
+	}
 	_frameRunning = false;
 }
 
@@ -283,6 +323,7 @@ void Emulator::Reset()
 
 	//Ensure reset button flag is off before recording input for first frame
 	_systemActionManager->ResetState();
+
 	_console->GetControlManager()->UpdateInputState();
 	_console->GetControlManager()->ResetLagCounter();
 
@@ -315,6 +356,7 @@ void Emulator::ReloadRom(bool forPowerCycle)
 
 void Emulator::PowerCycle()
 {
+	ShowResetStatus("Power");
 	ReloadRom(true);
 }
 
@@ -481,7 +523,8 @@ bool Emulator::InternalLoadRom(VirtualFile romFile, VirtualFile patchFile, bool 
 	_threadPaused = false;
 
 	if(!forPowerCycle && !_audioPlayerHud) {
-		ShowResetStatus("Power");
+		ShowResetStatus("Loaded");
+		isMemUnclean = false;
 	}
 
 	_videoDecoder->StartThread();

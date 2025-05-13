@@ -134,6 +134,24 @@ void SnesController::InternalDrawController(InputHud& hud)
 	hud.DrawButton(18, 9, 4, 2, IsPressed(Buttons::Start));
 
 	hud.DrawNumber(hud.GetControllerIndex() + 1, 16, 2);
+
+	InputDisplayPosition ctrlPos = _emu->GetSettings()->GetInputConfig().DisplayInputPosition;
+	uint32_t fc = _emu->GetFrameCount() % 100000;
+	if(ctrlPos == InputDisplayPosition::BottomLeft || ctrlPos == InputDisplayPosition::TopLeft) {
+		hud.DrawOutline(28, 9, 1, 1, 34, 15);
+		hud.DrawNumber(fc % 10, 56, 17);
+		hud.DrawNumber(fc / 10 % 10, 51, 17);
+		hud.DrawNumber(fc / 100 % 10, 46, 17);
+		hud.DrawNumber(fc / 1000 % 10, 41, 17);
+		hud.DrawNumber(fc / 10000 % 10, 36, 17);
+	} else {
+		hud.DrawOutline(28, 9, 1, 1, -1, 15);
+		hud.DrawNumber(fc % 10, 23, 17);
+		hud.DrawNumber(fc / 10 % 10, 18, 17);
+		hud.DrawNumber(fc / 100 % 10, 13, 17);
+		hud.DrawNumber(fc / 1000 % 10, 8, 17);
+		hud.DrawNumber(fc / 10000 % 10, 3, 17);
+	}
 }
 
 vector<DeviceButtonName> SnesController::GetKeyNameAssociations()

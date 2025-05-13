@@ -149,7 +149,6 @@ public:
 		hud.DrawNumber(fc / 100 % 10, 24, 0);
 		hud.DrawNumber(fc / 1000 % 10, 19, 0);
 		hud.DrawNumber(fc / 10000 % 10, 14, 0);
-
 	}
 
 	vector<DeviceButtonName> GetKeyNameAssociations() override

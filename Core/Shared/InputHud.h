@@ -24,10 +24,10 @@ private:
 	int GetSettingColor();
 
 public:
-	InputHud(Emulator *emu, DebugHud* hud);
+	InputHud(Emulator* emu, DebugHud* hud);
 
 	void DrawMousePosition(MousePosition pos);
-	void DrawOutline(int width, int height, int textX = 0, int textY = 0);
+	void DrawOutline(int width, int height, int textX = 1, int textY = 1, int startX = 0, int startY = 0);
 	void DrawButton(int x, int y, int width, int height, bool pressed);
 	void DrawNumber(int number, int x, int y);
 	void EndDrawController();
