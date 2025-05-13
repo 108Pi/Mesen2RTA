@@ -1,4 +1,11 @@
 # Mesen Community Edition
+# Mesen2RTA
+
+Adds indicators when certain features are enabled. 
+
+Adds frame counter to input display for NES and SNES.
+
+# Mesen
 
 Mesen is a multi-system emulator for Windows, Linux, and macOS. It supports NES, SNES, Game Boy (GB/SGB/GBC), Game Boy Advance, PC Engine, SMS/Game Gear, and WonderSwan (WS/WSC).
 
