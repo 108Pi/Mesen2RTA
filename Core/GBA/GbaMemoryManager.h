@@ -3,6 +3,7 @@
 #include "GBA/GbaTypes.h"
 #include "GBA/GbaPpu.h"
 #include "GBA/GbaTimer.h"
+#include "GBA/GbaDmaController.h"
 #include "Debugger/AddressInfo.h"
 #include "Utilities/ISerializable.h"
 
@@ -54,14 +55,18 @@ private:
 	
 	GbaIrqSource _pendingIrqSource = {};
 	uint8_t _pendingIrqSourceDelay = 0;
+	bool _pendingScanlineMatchIrq = false;
 	bool _haltModeUsed = false;
 	bool _biosLocked = false;
+	uint8_t _haltDelay = 0;
+	uint8_t _irqFirstAccessCycle = 0;
 
 	uint8_t* _waitStatesLut = nullptr;
 
 	__forceinline void ProcessWaitStates(GbaAccessModeVal mode, uint32_t addr);
 
-	__noinline void ProcessVramStalling(uint32_t addr);
+	__noinline void ProcessVramAccess(GbaAccessModeVal mode, uint32_t addr);
+	__noinline void ProcessVramStalling(uint8_t memType);
 
 	template<uint8_t width>
 	void UpdateOpenBus(uint32_t addr, uint32_t value);
@@ -90,19 +95,35 @@ public:
 
 	void ProcessIdleCycle();
 
-	template<bool allowDma = false>
+	template<bool firstAccessCycle = false>
 	__forceinline void ProcessInternalCycle()
 	{
 		if(_hasPendingUpdates) {
-			ProcessPendingUpdates(allowDma);
+			ProcessPendingUpdates(firstAccessCycle);
 		} else {
 			_masterClock++;
 			_ppu->Exec();
 			_timer->Exec(_masterClock);
 		}
 
+		if constexpr(firstAccessCycle) {
+			//The CPU appears to check the IRQ line on the first cycle in each read/write access
+			//So a 4-cycle read to ROM will check the IRQ line's state after the first of these
+			//4 cycles and this will determine whether or not the CPU runs an extra instruction
+			//before processing the IRQ or not.
+			//This is needed to pass the Internal_Cycle_DMA_IRQ test
+			_irqFirstAccessCycle = _state.IrqLine;
+		}
+
 		if(_hasPendingLateUpdates) {
 			ProcessPendingLateUpdates();
+		}
+	}
+	
+	__forceinline void ProcessDma()
+	{
+		if(_dmaController->HasPendingDma()) {
+			_dmaController->RunPendingDma(true);
 		}
 	}
 

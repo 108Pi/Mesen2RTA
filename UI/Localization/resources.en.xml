@@ -202,6 +202,8 @@
 			<Control ID="lblTurboSpeed">Fast Forward Speed:</Control>
 			<Control ID="lblRewindSpeedHint">%  (0 = Maximum speed)</Control>
 			<Control ID="lblRewindSpeed">Rewind Speed:</Control>
+			<Control ID="lblRunAhead">Run Ahead:</Control>
+			<Control ID="lblRunAheadFrames">frames (reduces input lag, increases CPU usage)</Control>
 
 			<Control ID="tpgFirmwares">Firmwares</Control>
 			<Control ID="lblNes">NES</Control>
@@ -414,6 +416,10 @@
 			<Control ID="grpGeneral">General</Control>
 			<Control ID="chkAllowInvalidInput">Allow invalid input (e.g Down + Up or Left + Right at the same time)</Control>
 			<Control ID="chkEnableMgbaLogApi">Enable mGBA log API</Control>
+
+			<Control ID="grpOverclocking">Overclocking</Control>
+			<Control ID="lblOverclockHint">Overclocking can help reduce or remove slowdowns in games (but it can also cause issues). To overclock, increase the value below.</Control>
+			<Control ID="lblOverclockScanlineCount">Additional scanlines:</Control>
 
 			<Control ID="tpgVideo">Video</Control>
 			<Control ID="lblLcdSettings">LCD Settings</Control>
@@ -770,6 +776,7 @@
 
 			<Control ID="chkAlwaysOnTop">Always display on top of other windows</Control>
 			<Control ID="chkShowFps">Show FPS</Control>
+			<Control ID="lblHudDisplaySize">HUD display size:</Control>
 			<Control ID="chkShowDebugInformation">Show debug information</Control>
 
 			<Control ID="lblLastFolderUsed">Last Folder Used</Control>
@@ -2859,6 +2866,10 @@ E
 		<Enum ID="WsAudioMode">
 			<Value ID="Headphones">Headphones (recommended)</Value>
 			<Value ID="Speaker">Speaker</Value>
+		</Enum>
+		<Enum ID="HudDisplaySize">
+			<Value ID="Fixed">Fixed size</Value>
+			<Value ID="Scaled">Scaled with game</Value>
 		</Enum>
 		<Enum ID="TileFormat">
 			<Value ID="NesBpp2">2 bpp</Value>

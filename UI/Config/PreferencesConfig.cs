@@ -66,7 +66,7 @@ namespace Mesen.Config
 		[Reactive] public bool ShowTitleBarInfo { get; set; } = false;
 		[Reactive] public bool ShowDebugInfo { get; set; } = false;
 		[Reactive] public bool DisableOsd { get; set; } = false;
-		[Reactive] public HudDisplaySize HudSize { get; set; } = HudDisplaySize.Fixed;
+		[Reactive] public HudDisplaySize HudSize { get; set; } = HudDisplaySize.Scaled;
 		[Reactive] public GameSelectionMode GameSelectionScreenMode { get; set; } = GameSelectionMode.ResumeState;
 
 		[Reactive] public FontAntialiasing FontAntialiasing { get; set; } = FontAntialiasing.SubPixelAntialias;

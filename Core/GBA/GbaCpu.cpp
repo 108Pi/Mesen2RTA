@@ -124,6 +124,7 @@ void GbaCpu::CheckForIrqs()
 	if(thumb) {
 		_state.R[14] += 2;
 	}
+	ReloadPipeline();
 	ProcessPipeline();
 	_emu->ProcessInterrupt<CpuType::Gba>(originalPc, _state.Pipeline.Execute.Address, false);
 }
@@ -149,6 +150,9 @@ uint32_t GbaCpu::ReadCode(GbaAccessModeVal mode, uint32_t addr)
 	//This is done before the call to Read() because e.g if DMA pauses the CPU and 
 	//runs, the next access will not be sequential (force-nseq-access test)
 	_state.Pipeline.Mode |= GbaAccessMode::Sequential;
+	if(_ldmGlitch) {
+		_ldmGlitch--;
+	}
 	return _memoryManager->Read(mode, addr);
 #else
 	uint32_t value = _memoryManager->DebugCpuRead(mode, addr);
@@ -161,6 +165,9 @@ uint32_t GbaCpu::Read(GbaAccessModeVal mode, uint32_t addr)
 {
 #ifndef DUMMYCPU
 	_state.Pipeline.Mode &= ~GbaAccessMode::Sequential;
+	if(_ldmGlitch) {
+		_ldmGlitch--;
+	}
 	return _memoryManager->Read(mode, addr);
 #else
 	uint32_t value = _memoryManager->DebugCpuRead(mode, addr);
@@ -173,6 +180,9 @@ void GbaCpu::Write(GbaAccessModeVal mode, uint32_t addr, uint32_t value)
 {
 #ifndef DUMMYCPU
 	_state.Pipeline.Mode &= ~GbaAccessMode::Sequential;
+	if(_ldmGlitch) {
+		_ldmGlitch--;
+	}
 	_memoryManager->Write(mode, addr, value);
 #else
 	LogMemoryOperation(addr, value, mode, MemoryOperationType::Write);
@@ -183,6 +193,9 @@ void GbaCpu::Idle()
 {
 #ifndef DUMMYCPU
 	_state.Pipeline.Mode &= ~GbaAccessMode::Sequential;
+	if(_ldmGlitch) {
+		_ldmGlitch--;
+	}
 	_memoryManager->ProcessIdleCycle();
 #endif
 }
@@ -195,11 +208,6 @@ void GbaCpu::Idle(uint8_t cycleCount)
 		case 2: Idle(); [[fallthrough]];
 		case 1: Idle(); break;
 	}
-}
-
-uint32_t GbaCpu::R(uint8_t reg)
-{
-	return _state.R[reg];
 }
 
 GbaCpuFlags& GbaCpu::GetSpsr()
@@ -307,6 +315,13 @@ uint32_t GbaCpu::ShiftRrx(uint32_t value, bool& carry)
 
 void GbaCpu::PowerOn()
 {
+	//"After nRESET has been taken HIGH, the ARM core does two further internal cycles
+	//before the first instruction is fetched from the reset vector"
+	//Fixes the "timer_reset" test
+	_memoryManager->ProcessIdleCycle();
+	_memoryManager->ProcessIdleCycle();
+
+	ReloadPipeline();
 	ProcessPipeline();
 }
 
@@ -408,4 +423,6 @@ void GbaCpu::Serialize(Serializer& s)
 	SV(_state.UndefinedSpsr.Negative);
 
 	SV(_state.CycleCount);
+
+	SV(_ldmGlitch);
 }

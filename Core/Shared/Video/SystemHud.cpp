@@ -39,10 +39,11 @@ void SystemHud::Draw(DebugHud* hud, uint32_t width, uint32_t height) const
 
 		if(!_emu->IsPaused()) {
 			int emuSpeed = settings->GetEmulationSpeed();
-			if(settings->CheckFlag(EmulationFlags::Rewind) || emuSpeed < 100) {
-				DrawTurboRewindIcon(hud, true, xOffset);
-			} else if(settings->CheckFlag(EmulationFlags::Turbo) || emuSpeed > 100 || emuSpeed == 0) {
+			EmulationConfig cfg = settings->GetEmulationConfig();
+			if(settings->CheckFlag(EmulationFlags::Turbo) || emuSpeed > 100 || emuSpeed == 0 || cfg.RunAheadFrames != 0) {
 				DrawTurboRewindIcon(hud, false, xOffset);
+			} else if(settings->CheckFlag(EmulationFlags::Rewind) || emuSpeed < 100) {
+				DrawTurboRewindIcon(hud, true, xOffset);
 			}
 		}
 	}
@@ -81,6 +82,16 @@ void SystemHud::ShowFpsCounter(DebugHud* hud, uint32_t screenWidth, int lineNumb
 	string fpsString = string("FPS: ") + std::to_string(_currentFPS); // +" / " + std::to_string(_currentRenderedFPS);
 	uint32_t length = DrawStringCommand::MeasureString(fpsString).X;
 	DrawString(hud, screenWidth, fpsString, screenWidth - 8 - length, yPos);
+}
+
+void SystemHud::ShowRunAhead(DebugHud* hud, uint32_t screenWidth, int lineNumber) const
+{
+	int yPos = 10 + 10 * lineNumber;
+
+	int raf = _emu->GetSettings()->GetEmulationConfig().RunAheadFrames;
+	string rafString = string("RA: ") + std::to_string(raf);
+	uint32_t length = DrawStringCommand::MeasureString(rafString).X;
+	DrawString(hud, screenWidth, rafString, screenWidth - 8 - length, yPos);
 }
 
 void SystemHud::ShowGameTimer(DebugHud* hud, uint32_t screenWidth, int lineNumber) const
@@ -139,6 +150,9 @@ void SystemHud::DrawCounters(DebugHud* hud, uint32_t screenWidth) const
 		}
 		if(cfg.ShowLagCounter) {
 			ShowLagCounter(hud, screenWidth, lineNumber++);
+		}
+		if(_emu->GetSettings()->GetEmulationConfig().RunAheadFrames != 0) {
+			ShowRunAhead(hud, screenWidth, lineNumber++);
 		}
 	}
 }

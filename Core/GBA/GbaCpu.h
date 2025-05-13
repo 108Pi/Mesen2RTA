@@ -21,6 +21,7 @@ class GbaCpu : public ISerializable
 private:
 	uint32_t _opCode = 0;
 	GbaCpuState _state = {};
+	uint8_t _ldmGlitch = 0;
 
 	GbaMemoryManager* _memoryManager = nullptr;
 	GbaRomPrefetch* _prefetch = nullptr;
@@ -45,7 +46,22 @@ private:
 	uint32_t ShiftRor(uint32_t value, uint8_t shift, bool& carry);
 	uint32_t ShiftRrx(uint32_t value, bool& carry);
 
-	uint32_t R(uint8_t reg);
+	__forceinline uint32_t R(uint8_t reg)
+	{
+		//Used for ARM mode, which can trigger the LDM^ glitch
+		if(_ldmGlitch == 0 || reg == 15 || reg < 8) {
+			return _state.R[reg];
+		}
+
+		return _state.R[reg] | _state.UserRegs[reg - 8];
+	}
+
+	__forceinline uint32_t RT(uint8_t reg)
+	{
+		//Thumb mode can't trigger the LDM glitch
+		return _state.R[reg];
+	}
+
 	void SetR(uint8_t reg, uint32_t value)
 	{
 		_state.R[reg] = value;
@@ -70,8 +86,6 @@ private:
 	void ArmSingleDataSwap();
 	void ArmSoftwareInterrupt();
 	void ArmInvalidOp();
-
-	bool CheckConditions(uint32_t condCode);
 
 	static void InitThumbOpTable();
 	void ThumbMoveShiftedRegister();
@@ -102,10 +116,6 @@ private:
 	{
 		GbaCpuPipeline& pipe = _state.Pipeline;
 
-		if(pipe.ReloadRequested) {
-			ReloadPipeline();
-		}
-
 		pipe.Execute = pipe.Decode;
 		pipe.Decode = pipe.Fetch;
 
@@ -121,6 +131,47 @@ private:
 
 	void ProcessException(GbaCpuMode mode, GbaCpuVector vector);
 	void CheckForIrqs();
+
+	__forceinline bool CheckConditions(uint32_t condCode)
+	{
+		/*Code Suffix Flags Meaning
+		0000 EQ Z set equal
+		0001 NE Z clear not equal
+		0010 CS C set unsigned higher or same
+		0011 CC C clear unsigned lower
+		0100 MI N set negative
+		0101 PL N clear positive or zero
+		0110 VS V set overflow
+		0111 VC V clear no overflow
+		1000 HI C set and Z clear unsigned higher
+		1001 LS C clear or Z set unsigned lower or same
+		1010 GE N equals V greater or equal
+		1011 LT N not equal to V less than
+		1100 GT Z clear AND(N equals V) greater than
+		1101 LE Z set OR(N not equal to V) less than or equal
+		1110 AL(ignored) always
+		*/
+		switch(condCode) {
+			case 0: return _state.CPSR.Zero;
+			case 1: return !_state.CPSR.Zero;
+			case 2: return _state.CPSR.Carry;
+			case 3: return !_state.CPSR.Carry;
+			case 4: return _state.CPSR.Negative;
+			case 5: return !_state.CPSR.Negative;
+			case 6: return _state.CPSR.Overflow;
+			case 7: return !_state.CPSR.Overflow;
+			case 8: return _state.CPSR.Carry && !_state.CPSR.Zero;
+			case 9: return !_state.CPSR.Carry || _state.CPSR.Zero;
+			case 10: return _state.CPSR.Negative == _state.CPSR.Overflow;
+			case 11: return _state.CPSR.Negative != _state.CPSR.Overflow;
+			case 12: return !_state.CPSR.Zero && (_state.CPSR.Negative == _state.CPSR.Overflow);
+			case 13: return _state.CPSR.Zero || (_state.CPSR.Negative != _state.CPSR.Overflow);
+			case 14: return true;
+			case 15: return false;
+		}
+
+		return true;
+	}
 
 public:
 	virtual ~GbaCpu();
@@ -150,7 +201,6 @@ public:
 		}
 		
 		bool isHaltOver = _memoryManager->IsHaltOver();
-		bool processIrq = !_state.CPSR.IrqDisable && _memoryManager->ProcessIrq();
 
 		if(_memoryManager->IsSystemStopped()) {
 			_memoryManager->ProcessStoppedCycle();
@@ -161,9 +211,6 @@ public:
 		if(isHaltOver) {
 			_memoryManager->ProcessInternalCycle<true>();
 			_state.Stopped = false;
-			if(processIrq) {
-				CheckForIrqs();
-			}
 			return false;
 		} else {
 			return true;
@@ -174,6 +221,16 @@ public:
 	__forceinline void Exec()
 	{
 #ifndef DUMMYCPU
+		//Check if DMA needs to be executed before running the next	instruction.
+		//If a DMA is pending, it needs to start before the CPU tries to run the
+		//next instruction instruction. This can impact the timing at which the IRQ is checked
+		//(before the DMA vs after the DMA), which affects test results.
+		//Additionally, it's possible for the DMA to turn on halt mode, so DMA needs to be
+		//processed here, to ensure the CPU immediately enters halt mode after DMA is over,
+		//instead of running the next instruction before halting.
+		//This fixes the haltcnt test rom and the DMA Prefetch test in the mGBA Suite test rom
+		_memoryManager->ProcessDma();
+
 		if constexpr(inlineHalt) {
 			if(_state.Stopped && InlineProcessHaltMode<debuggerEnabled>()) {
 				return;
@@ -187,6 +244,9 @@ public:
 		if constexpr(debuggerEnabled) {
 			_emu->ProcessInstruction<CpuType::Gba>();
 		}
+
+		uint64_t startClock = _memoryManager->GetMasterClock();
+		bool irqDisable = _state.CPSR.IrqDisable;
 #endif
 
 		_opCode = _state.Pipeline.Execute.OpCode;
@@ -204,9 +264,20 @@ public:
 		}
 
 #ifndef DUMMYCPU
-		bool checkIrq = !_state.CPSR.IrqDisable && _memoryManager->ProcessIrq();
+		if(_state.Pipeline.ReloadRequested) {
+			ReloadPipeline();
+		}
+
+		bool checkIrq = _memoryManager->ProcessIrq();
+		if(checkIrq && startClock != _memoryManager->GetMasterClock()) {
+			//TST, TEQ, CMP, CMN can modify the I flag without any fetch/idle cycles.
+			//In that case, the IRQ handling is done using the original I flag before the instruction was executed. (Passes "psr" test)
+			//Otherwise, use the current I flag.
+			irqDisable = _state.CPSR.IrqDisable;
+		}
+
 		ProcessPipeline();
-		if(checkIrq) {
+		if(!irqDisable && checkIrq) {
 			CheckForIrqs();
 		}
 #endif

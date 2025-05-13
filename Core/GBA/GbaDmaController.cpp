@@ -41,10 +41,25 @@ void GbaDmaController::TriggerDmaChannel(GbaDmaTrigger trigger, uint8_t channel,
 		ch.Pending = true;
 		_dmaPending = true;
 
-		if(_dmaActiveChannel < 0 && !_dmaStartDelay) {
-			//CPU runs for 2 more cycles before pausing for DMA
-			_dmaStartDelay = 3;
+		uint8_t delay = 2;
+		if(trigger == GbaDmaTrigger::Special) {
+			if(channel < 3) {
+				//Audio DMA triggers slightly later (4 passes fifo_dma_2 test rom)
+				delay = 3;
+			} else {
+				//Video capture DMA
+				delay = 5;
+			}
+		} else if(trigger == GbaDmaTrigger::HBlank) {
+			delay = 3;
+		}
+
+		//CPU runs for a few more cycles before pausing for DMA
+		ch.StartClock = _memoryManager->GetMasterClock() + delay;
+
+		if(_dmaActiveChannel < 0) {
 			_memoryManager->SetPendingUpdateFlag();
+			_needStart = true;
 		}
 	}
 }
@@ -65,34 +80,47 @@ void GbaDmaController::RunPendingDma(bool allowStartDma)
 		return;
 	}
 
-	if(_dmaStartDelay) {
-		_dmaStartDelay--;
-		if(_dmaStartDelay) {
-			return;
-		}
-	}
-
 	if(!allowStartDma || _memoryManager->IsBusLocked()) {
 		//DMA can only start between cpu read/write cycles
 		//and can't start if the bus is locked by the cpu (swap instruction)
 		//Delay until DMA can start
-		_dmaStartDelay++;
+		return;
+	}
+
+	uint64_t start = _memoryManager->GetMasterClock();
+	
+	bool canStart = false;
+	for(int i = 0; i < 4; i++) {
+		if(_state.Ch[i].Pending && start >= _state.Ch[i].StartClock) {
+			canStart = true;
+			break;
+		}
+	}
+
+	if(!canStart) {
+		//Too early to start DMA
 		return;
 	}
 
 	_dmaRunning = true;
+	_needStart = false;
+
 	//Before starting DMA, an additional idle cycle executes (CPU is blocked during this)
-	_memoryManager->ProcessInternalCycle();
+	_memoryManager->ProcessIdleCycle();
 
 	for(int i = 0; i < 4; i++) {
-		if(_state.Ch[i].Pending) {
+		if(_state.Ch[i].Pending && start >= _state.Ch[i].StartClock) {
 			RunDma(_state.Ch[i], i);
 		}
 	}
 
 	//After stopping DMA, an additional idle cycle executes (CPU is blocked during this)
-	_memoryManager->ProcessInternalCycle();
+	_memoryManager->ProcessIdleCycle();
 	_dmaRunning = false;
+	_needStart = _dmaPending;
+
+	//Determine how many CPU idle cycles could have run during DMA
+	_idleCycleCounter = _memoryManager->GetMasterClock() - start;
 }
 
 void GbaDmaController::RunDma(GbaDmaChannel& ch, uint8_t chIndex)
@@ -133,22 +161,33 @@ void GbaDmaController::RunDma(GbaDmaChannel& ch, uint8_t chIndex)
 	uint8_t srcBank = ch.SrcLatch >> 24;
 	bool isRomSrc = srcBank >= 0x08 && srcBank <= 0x0D;
 	uint32_t srcAddr = ch.SrcLatch;
+	bool forceNonSeq = false;
 
 	_dmaActiveChannel = chIndex;
 
 	while(length-- > 0) {
 		uint32_t value;
 		if(srcAddr >= 0x2000000) {
-			if(srcAddr & 0x8000000) {
-				//DMA accessed ROM, suspend the prefetcher
-				_prefetcher->SetSuspendState(true);
-			}
+			if(!isRomSrc) {
+				value = ch.ReadValue = _memoryManager->Read(mode, srcAddr);
+			} else {
+				if(forceNonSeq) {
+					mode &= ~GbaAccessMode::Sequential;
+					forceNonSeq = false;
+				}
 
-			value = ch.ReadValue = _memoryManager->Read(mode, srcAddr);
-			if(isRomSrc) {
+				if((ch.SrcLatch & 0x1FFFF) == 0x20000u - offset) {
+					//If the next ROM access is a 0x20000 boundary, non-sequential timing is used
+					//(passes 128kb-boundary & DMA_ROM_Fixed tests)
+					forceNonSeq = true;
+				}
+
+				value = ch.ReadValue = _memoryManager->Read(mode, srcAddr);
+
 				//If a DMA reads from ROM (cart) and writes to ROM (cart), the first ROM write will be sequential
 				mode |= GbaAccessMode::Sequential;
 			}
+
 			if(!wordTransfer) {
 				//Value kept in buffer is mirrored across both half-words when transfering half-words
 				//Needed to pass mgba suite tests that perform a half-word transfer before performing
@@ -164,11 +203,6 @@ void GbaDmaController::RunDma(GbaDmaChannel& ch, uint8_t chIndex)
 				//For half-word transfers, the value written depends on the destination address
 				value = ch.ReadValue >> ((ch.DestLatch & 0x02) << 3);
 			}
-		}
-
-		if(ch.DestLatch & 0x8000000) {
-			//DMA accessed ROM, suspend the prefetcher
-			_prefetcher->SetSuspendState(true);
 		}
 
 		_memoryManager->Write(mode, ch.DestLatch, value);
@@ -196,11 +230,6 @@ void GbaDmaController::RunDma(GbaDmaChannel& ch, uint8_t chIndex)
 				isRomSrc = true;
 			}
 
-			if((srcMode == GbaDmaAddrMode::Decrement || srcMode == GbaDmaAddrMode::Fixed) && (srcAddr & 0x1FFFF) == 0) {
-				//When on a 0x20000 boundary non-sequential timing is used (passes 128kb-boundary test)
-				mode &= ~GbaAccessMode::Sequential;
-			}
-
 			//While the address is in the ROM region, all reads are sequential
 			//even if the channel is set to decrement/fixed
 			srcAddr += offset;
@@ -211,7 +240,7 @@ void GbaDmaController::RunDma(GbaDmaChannel& ch, uint8_t chIndex)
 		if(_dmaPending) {
 			//Check if channels with higher priority need to run
 			for(int i = 0; i < chIndex; i++) {
-				if(_state.Ch[i].Pending) {
+				if(_state.Ch[i].Pending && _memoryManager->GetMasterClock() >= _state.Ch[i].StartClock) {
 					RunDma(_state.Ch[i], i);
 
 					//Mark next access as non-sequential?
@@ -223,10 +252,10 @@ void GbaDmaController::RunDma(GbaDmaChannel& ch, uint8_t chIndex)
 	}
 
 	_dmaActiveChannel = -1;
-	_prefetcher->SetSuspendState(false);
 
 	ch.Active = false;
 	ch.Pending = false;
+	ch.StartClock = 0;
 	
 	_dmaPending = false;
 	for(int i = 0; i < 4; i++) {
@@ -248,6 +277,15 @@ void GbaDmaController::RunDma(GbaDmaChannel& ch, uint8_t chIndex)
 	if(ch.IrqEnabled) {
 		_memoryManager->SetIrqSource((GbaIrqSource)((int)GbaIrqSource::DmaChannel0 << chIndex));
 	}
+}
+
+bool GbaDmaController::CanRunInParallelWithDma()
+{
+	if(_idleCycleCounter) {
+		_idleCycleCounter--;
+		return true;
+	}
+	return false;
 }
 
 uint8_t GbaDmaController::ReadRegister(uint32_t addr)
@@ -338,6 +376,8 @@ void GbaDmaController::Serialize(Serializer& s)
 		SVI(_state.Ch[i].Length);
 
 		if(s.GetFormat() != SerializeFormat::Map) {
+			SVI(_state.Ch[i].StartClock);
+
 			SVI(_state.Ch[i].DestLatch);
 			SVI(_state.Ch[i].SrcLatch);
 			SVI(_state.Ch[i].LenLatch);
@@ -364,6 +404,7 @@ void GbaDmaController::Serialize(Serializer& s)
 		SV(_dmaRunning);
 		SV(_dmaPending);
 		SV(_dmaActiveChannel);
-		SV(_dmaStartDelay);
+		SV(_needStart);
+		SV(_idleCycleCounter);
 	}
 }

@@ -17,7 +17,8 @@ private:
 	int8_t _dmaActiveChannel = -1;
 	bool _dmaPending = false;
 	bool _dmaRunning = false;
-	uint8_t _dmaStartDelay = 0;
+	bool _needStart = false;
+	uint32_t _idleCycleCounter = 0;
 
 	void RunDma(GbaDmaChannel& ch, uint8_t chIndex);
 
@@ -27,14 +28,18 @@ public:
 	GbaDmaControllerState& GetState();
 
 	bool IsVideoCaptureDmaEnabled();
+	bool IsRunning() { return _dmaRunning; }
 
 	int8_t DebugGetActiveChannel();
 
 	void TriggerDmaChannel(GbaDmaTrigger trigger, uint8_t channel, bool forceStop = false);
 	void TriggerDma(GbaDmaTrigger trigger);
 
-	__forceinline bool HasPendingDma() { return _dmaStartDelay > 0; }
+	__forceinline bool HasPendingDma() { return _needStart; }
 	__noinline void RunPendingDma(bool allowStartDma);
+
+	__forceinline void ResetIdleCounter() { _idleCycleCounter = 0; }
+	bool CanRunInParallelWithDma();
 
 	uint8_t ReadRegister(uint32_t addr);
 	void WriteRegister(uint32_t addr, uint8_t value);

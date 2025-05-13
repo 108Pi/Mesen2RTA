@@ -124,7 +124,6 @@ struct GbaBgConfig
 	uint16_t TilemapAddr;
 	uint16_t TilesetAddr;
 	uint16_t ScrollX;
-	uint16_t ScrollXLatch;
 	uint16_t ScrollY;
 	uint8_t ScreenSize;
 	bool DoubleWidth;
@@ -135,6 +134,7 @@ struct GbaBgConfig
 	bool Bpp8Mode;
 	bool Enabled;
 	uint8_t EnableTimer;
+	uint8_t DisableTimer;
 	GbaBgStereoMode StereoMode;
 };
 
@@ -150,6 +150,7 @@ struct GbaTransformConfig
 
 	bool PendingUpdateX;
 	bool PendingUpdateY;
+	bool NeedInit;
 };
 
 struct GbaWindowConfig
@@ -200,6 +201,7 @@ struct GbaPpuState : BaseState
 	bool AllowHblankOamAccess;
 	bool ObjVramMappingOneDimension;
 	bool ForcedBlank;
+	uint8_t ForcedBlankDisableTimer;
 	bool StereoscopicEnabled;
 
 	uint8_t Control2;
@@ -273,7 +275,6 @@ struct GbaRomPrefetchState
 	uint32_t PrefetchAddr;
 	uint8_t ClockCounter;
 	uint8_t BoundaryCyclePenalty;
-	bool Suspended;
 	bool WasFilled;
 	bool Started;
 	bool Sequential;
@@ -318,6 +319,7 @@ enum class GbaDmaAddrMode : uint8_t
 
 struct GbaDmaChannel
 {
+	uint64_t StartClock;
 	uint32_t ReadValue;
 
 	uint32_t Destination;
@@ -585,4 +587,6 @@ public:
 	static constexpr uint32_t ScreenWidth = 240;
 	static constexpr uint32_t ScreenHeight = 160;
 	static constexpr uint32_t PixelCount = GbaConstants::ScreenWidth * GbaConstants::ScreenHeight;
+	
+	static constexpr uint32_t ScanlineCount = 228;
 };

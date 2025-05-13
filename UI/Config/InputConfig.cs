@@ -18,8 +18,8 @@ namespace Mesen.Config
 		[Reactive] public bool HidePointerForLightGuns { get; set; } = false;
 		[Reactive][MinMax(0, 10)] public UInt32 ForceFeedbackIntensity { get; set; } = 5;
 
-		[Reactive] public InputDisplayPosition DisplayInputPosition { get; set; } = InputDisplayPosition.BottomRight;
-		[Reactive] public bool DisplayInputPort1 { get; set; } = false;
+		[Reactive] public InputDisplayPosition DisplayInputPosition { get; set; } = InputDisplayPosition.BottomLeft;
+		[Reactive] public bool DisplayInputPort1 { get; set; } = true;
 		[Reactive] public bool DisplayInputPort2 { get; set; } = false;
 		[Reactive] public bool DisplayInputPort3 { get; set; } = false;
 		[Reactive] public bool DisplayInputPort4 { get; set; } = false;
