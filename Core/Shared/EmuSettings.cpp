@@ -43,6 +43,7 @@ void EmuSettings::Serialize(Serializer& s)
 	//TODOv2: These should probably not be loaded except for movie playback and netplay clients
 	//TODOv2: Desyncs are possible when random state options are turned on
 	SV(_video.IntegerFpsMode);
+	SV(_emulation.RunAheadFrames);
 	SV(_game.DipSwitches);
 
 	switch(_emu->GetConsoleType()) {
@@ -144,6 +145,7 @@ void EmuSettings::Serialize(Serializer& s)
 
 		case ConsoleType::Gba:
 			SV(_gba.RamPowerOnState);
+			SV(_gba.OverclockScanlineCount);
 			SV(_gba.Controller.Type);
 			break;
 
@@ -159,10 +161,17 @@ void EmuSettings::Serialize(Serializer& s)
 
 uint32_t EmuSettings::GetVersion()
 {
+<<<<<<< HEAD
 	//Version 2.2.1
 	uint16_t major = 2;
 	uint8_t minor = 2;
 	uint8_t revision = 1;
+=======
+	//Version 0.0.2
+	uint16_t major = 0;
+	uint8_t minor = 0;
+	uint8_t revision = 2;
+>>>>>>> d77ae26e (Update to 0.0.2)
 	return (major << 16) | (minor << 8) | revision;
 }
 

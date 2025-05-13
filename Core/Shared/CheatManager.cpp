@@ -475,10 +475,7 @@ void CheatManager::ApplyCheat(uint32_t addr, uint8_t& value)
 			}
 		}
 	}
-
-
 }
-
 
 bool CheatManager::HasCheats()
 {
