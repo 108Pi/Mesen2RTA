@@ -1218,9 +1218,10 @@ void Emulator::ShowResetStatus(string type)
 	ConsoleRegion region = _console->GetRegion();
 	string modelName = region == ConsoleRegion::Pal ? "PAL" : (region == ConsoleRegion::Dendy ? "Dendy" : "NTSC");
 	string romHash = GetRomInfo().RomFile.GetSha1Hash();
+	romHash = romHash.substr(0, 4) + "..." + romHash.substr(36);
 	string version = GetSettings()->GetVersionString() + " ";
-	string indicateModified = isMemUnclean ? "Modified" : "";
-	MessageManager::DisplayMessage(version + modelName + " " + type, indicateModified + "\n" + romHash);
+	string indicateModified = isMemUnclean ? "Modified " : " ";
+	MessageManager::DisplayMessage(version + modelName + " " + type, indicateModified + romHash);
 }
 
 void Emulator::SetIsUnclean(bool state)
