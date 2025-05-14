@@ -47,8 +47,8 @@
 				<TextBlock Grid.Column="2" Text="{l:Translate lblHighCompression}" />
 			</Grid>
 			
-			<CheckBox Grid.Row="3" Grid.ColumnSpan="3" Content="{l:Translate lblRecordSystemHud}" IsChecked="{Binding Config.RecordSystemHud}" />
-			<CheckBox Grid.Row="4" Grid.ColumnSpan="3" Content="{l:Translate lblRecordInputHud}" IsChecked="{Binding Config.RecordInputHud}" />
+			<CheckBox Grid.Row="3" Grid.ColumnSpan="3" Content="{l:Translate lblRecordSystemHud}" IsChecked="True" IsEnabled="False" />
+			<CheckBox Grid.Row="4" Grid.ColumnSpan="3" Content="{l:Translate lblRecordInputHud}" IsChecked="True" IsEnabled="False" />
 		</Grid>
 	</DockPanel>
 </Window>

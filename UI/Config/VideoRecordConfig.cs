@@ -11,8 +11,8 @@ namespace Mesen.Config
 	{
 		[ObservableProperty] public partial VideoCodec Codec { get; set; } = VideoCodec.CSCD;
 		[ObservableProperty] public partial UInt32 CompressionLevel { get; set; } = 6;
-		[ObservableProperty] public partial bool RecordSystemHud { get; set; } = false;
-		[ObservableProperty] public partial bool RecordInputHud { get; set; } = false;
+		public partial bool RecordSystemHud { get; } = true;
+		public partial bool RecordInputHud { get; } = true;
 	}
 
 	public enum VideoCodec

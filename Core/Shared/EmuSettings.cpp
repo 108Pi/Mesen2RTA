@@ -162,6 +162,7 @@ void EmuSettings::Serialize(Serializer& s)
 uint32_t EmuSettings::GetVersion()
 {
 <<<<<<< HEAD
+<<<<<<< HEAD
 	//Version 2.2.1
 	uint16_t major = 2;
 	uint8_t minor = 2;
@@ -172,6 +173,12 @@ uint32_t EmuSettings::GetVersion()
 	uint8_t minor = 0;
 	uint8_t revision = 2;
 >>>>>>> d77ae26e (Update to 0.0.2)
+=======
+	//Version 0.0.3
+	uint16_t major = 0;
+	uint8_t minor = 0;
+	uint8_t revision = 3;
+>>>>>>> abff4e58 (Hud recording always enabled, version bump)
 	return (major << 16) | (minor << 8) | revision;
 }
 
