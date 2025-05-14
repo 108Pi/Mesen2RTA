@@ -30,7 +30,13 @@ public:
 		Up,
 		Down,
 		Left,
-		Right
+		Right,
+		TA,
+		TB,
+		TX,
+		TY,
+		TL,
+		TR
 	};
 
 	SnesController(Emulator* emu, uint8_t port, KeyMappingSet keyMappings);

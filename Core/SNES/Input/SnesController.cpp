@@ -39,6 +39,12 @@ void SnesController::InternalSetStateFromInput()
 			SetPressedState(Buttons::Y, keyMapping.TurboY);
 			SetPressedState(Buttons::L, keyMapping.TurboL);
 			SetPressedState(Buttons::R, keyMapping.TurboR);
+			SetPressedState(Buttons::TA, keyMapping.TurboA);
+			SetPressedState(Buttons::TB, keyMapping.TurboB);
+			SetPressedState(Buttons::TX, keyMapping.TurboX);
+			SetPressedState(Buttons::TY, keyMapping.TurboY);
+			SetPressedState(Buttons::TL, keyMapping.TurboL);
+			SetPressedState(Buttons::TR, keyMapping.TurboR);
 		}
 
 		bool allowInvalidInput = _emu->GetConsoleType() == ConsoleType::Nes ? _emu->GetSettings()->GetNesConfig().AllowInvalidInput : _emu->GetSettings()->GetSnesConfig().AllowInvalidInput;
@@ -121,13 +127,13 @@ void SnesController::InternalDrawController(InputHud& hud)
 	hud.DrawButton(8, 6, 3, 3, IsPressed(Buttons::Right));
 	hud.DrawButton(5, 6, 3, 3, false);
 
-	hud.DrawButton(27, 3, 3, 3, IsPressed(Buttons::X));
-	hud.DrawButton(27, 9, 3, 3, IsPressed(Buttons::B));
-	hud.DrawButton(30, 6, 3, 3, IsPressed(Buttons::A));
-	hud.DrawButton(24, 6, 3, 3, IsPressed(Buttons::Y));
+	hud.DrawButton(27, 3, 3, 3, IsPressed(Buttons::X), IsPressed(Buttons::TX));
+	hud.DrawButton(27, 9, 3, 3, IsPressed(Buttons::B), IsPressed(Buttons::TB));
+	hud.DrawButton(30, 6, 3, 3, IsPressed(Buttons::A), IsPressed(Buttons::TA));
+	hud.DrawButton(24, 6, 3, 3, IsPressed(Buttons::Y), IsPressed(Buttons::TY));
 
-	hud.DrawButton(4, 0, 5, 2, IsPressed(Buttons::L));
-	hud.DrawButton(26, 0, 5, 2, IsPressed(Buttons::R));
+	hud.DrawButton(4, 0, 5, 2, IsPressed(Buttons::L), IsPressed(Buttons::TL));
+	hud.DrawButton(26, 0, 5, 2, IsPressed(Buttons::R), IsPressed(Buttons::TR));
 
 	hud.DrawButton(13, 9, 4, 2, IsPressed(Buttons::Select));
 	hud.DrawButton(18, 9, 4, 2, IsPressed(Buttons::Start));

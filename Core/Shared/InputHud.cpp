@@ -20,12 +20,9 @@ InputHud::InputHud(Emulator* emu, DebugHud* hud)
 	_hud = hud;
 }
 
-void InputHud::DrawButton(int x, int y, int width, int height, bool pressed)
+void InputHud::DrawButton(int x, int y, int width, int height, bool pressed, bool isTurbo)
 {
-	//FrameInfo size = _emu->GetVideoDecoder()->GetBaseFrameInfo(true);
-	//size = VideoRenderer::GetEmuHudSize(size);
-	//float s = size.Width / 256.0;
-	int color = pressed ? 0x00FFFFFF : colors[GetSettingColor()];
+	int color = pressed ? isTurbo ? 0x00D7FFFF : 0x00FFFFFF : colors[GetSettingColor()];
 	_hud->DrawRectangle((_xOffset + x), (_yOffset + y), width, height, color, true, 1);
 }
 

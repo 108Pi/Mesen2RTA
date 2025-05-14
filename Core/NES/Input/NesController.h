@@ -12,7 +12,7 @@ private:
 	bool _microphoneEnabled = false;
 	uint32_t _turboSpeed = 0;
 	uint8_t _stateBuffer = 0;
-
+	bool turboButtonPressed = false;
 protected:
 	void Serialize(Serializer& s) override
 	{
@@ -52,6 +52,8 @@ protected:
 			if(turboOn) {
 				SetPressedState(Buttons::A, keyMapping.TurboA);
 				SetPressedState(Buttons::B, keyMapping.TurboB);
+				SetPressedState(Buttons::TA, keyMapping.TurboA);
+				SetPressedState(Buttons::TB, keyMapping.TurboB);
 			}
 
 			if(_microphoneEnabled && (_emu->GetFrameCount() % 3) == 0) {
@@ -88,7 +90,9 @@ public:
 		Select,
 		B,
 		A,
-		Microphone
+		Microphone,
+		TA,
+		TB
 	};
 
 	NesController(Emulator* emu, ControllerType type, uint8_t port, KeyMappingSet keyMappings) : BaseControlDevice(emu, type, port, keyMappings)
@@ -146,10 +150,10 @@ public:
 		hud.DrawButton(8, 5, 3, 3, IsPressed(Buttons::Right));
 		hud.DrawButton(5, 5, 3, 3, false);
 
-		hud.DrawButton(33, 6, 2, 4, IsPressed(Buttons::A));
-		hud.DrawButton(32, 7, 4, 2, IsPressed(Buttons::A));
-		hud.DrawButton(28, 6, 2, 4, IsPressed(Buttons::B));
-		hud.DrawButton(27, 7, 4, 2, IsPressed(Buttons::B));
+		hud.DrawButton(33, 6, 2, 4, IsPressed(Buttons::A), IsPressed(Buttons::TA));
+		hud.DrawButton(32, 7, 4, 2, IsPressed(Buttons::A), IsPressed(Buttons::TA));
+		hud.DrawButton(28, 6, 2, 4, IsPressed(Buttons::B), IsPressed(Buttons::TB));
+		hud.DrawButton(27, 7, 4, 2, IsPressed(Buttons::B), IsPressed(Buttons::TB));
 
 		hud.DrawButton(15, 8, 4, 2, IsPressed(Buttons::Select));
 		hud.DrawButton(20, 8, 4, 2, IsPressed(Buttons::Start));
