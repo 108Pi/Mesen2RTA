@@ -35,7 +35,7 @@ namespace Mesen.Config
 		{
 			get
 			{
-				string path = Path.Combine(BaseDocumentsFolder, "Mesen2");
+				string path = Path.Combine(BaseDocumentsFolder, "Mesen2RTA");
 				return File.Exists(Path.Combine(path, "settings.json")) ? path : null;
 			}
 		}
