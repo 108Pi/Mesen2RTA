@@ -156,8 +156,8 @@ bool MesenMovie::Play(VirtualFile& file)
 	ParseSettings(_settingsData);
 
 	string version = LoadString(_settings, MovieKeys::MesenVersion);
-	if(version.size() < 2 || version.substr(0, 2) == "0." || version.substr(0, 2) == "1.") {
-		//Prevent loading movies from Mesen/Mesen-S version 0.x.x or 1.x.x
+	if(version.size() < 2 || version.substr(0, 2) == "1.") {
+		//Prevent loading movies from Mesen/Mesen-S version 1.x.x
 		MessageManager::DisplayMessage("Movies", "MovieIncompatibleVersion");
 		return false;
 	}
