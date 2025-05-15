@@ -160,7 +160,7 @@ void SystemHud::DrawCounters(DebugHud* hud, uint32_t screenWidth) const
 void SystemHud::DisplayMessage(string title, string message)
 {
 	auto lock = _msgLock.AcquireSafe();
-	_messages.push_front(std::make_unique<MessageInfo>(title, message, 3000));
+	_messages.push_front(std::make_unique<MessageInfo>(title, message, 1000));
 }
 
 void SystemHud::DrawMessages(DebugHud* hud, uint32_t screenWidth, uint32_t screenHeight) const
@@ -168,7 +168,7 @@ void SystemHud::DrawMessages(DebugHud* hud, uint32_t screenWidth, uint32_t scree
 	int counter = 0;
 	int lastHeight = 3;
 	for(auto& msg : _messages) {
-		if(counter < 4) {
+		if(counter < 3) {
 			DrawMessage(hud, *msg.get(), screenWidth, screenHeight, lastHeight);
 		} else {
 			break;
