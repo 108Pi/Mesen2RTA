@@ -163,6 +163,7 @@ uint32_t EmuSettings::GetVersion()
 {
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	//Version 2.2.1
 	uint16_t major = 2;
 	uint8_t minor = 2;
@@ -179,6 +180,12 @@ uint32_t EmuSettings::GetVersion()
 	uint8_t minor = 0;
 	uint8_t revision = 3;
 >>>>>>> abff4e58 (Hud recording always enabled, version bump)
+=======
+	//Version 0.0.4
+	uint16_t major = 0;
+	uint8_t minor = 0;
+	uint8_t revision = 4;
+>>>>>>> 12ab2289 (UI: Show cheat count on reset, bump version)
 	return (major << 16) | (minor << 8) | revision;
 }
 

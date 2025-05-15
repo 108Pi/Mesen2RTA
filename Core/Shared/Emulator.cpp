@@ -321,6 +321,14 @@ void Emulator::Stop(bool sendNotification, bool preventRecentGameSave, bool save
 void Emulator::Reset()
 {
 	Lock();
+	if(_cheatManager->HasCheats()) {
+		vector<CheatCode> codes = _cheatManager->GetCheats();
+		if(codes.size() > 1) {
+			MessageManager::DisplayMessage("Cheats", "CheatsApplied", std::to_string(codes.size()));
+		} else if(codes.size() == 1) {
+			MessageManager::DisplayMessage("Cheats", "CheatApplied");
+		}
+	}
 	ShowResetStatus("Reset");
 	_console->Reset();
 
