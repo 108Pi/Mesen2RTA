@@ -10,7 +10,7 @@
 #include "Shared/CheatManager.h"
 #include "Shared/HistoryViewer.h"
 
-static constexpr int colors[4] = { 0x00111111, 0x00117111, 0x00711111 , 0x007F0072};
+static constexpr int colors[4] = { 0x00111111, 0x00117111, 0x00711111 , 0x005F0072 };
 static int bgColor = 0x00A9A9A9;
 int prevLagCount = 0;
 
@@ -258,10 +258,6 @@ int InputHud::GetSettingColor()
 		return 2;
 	}
 
-	if(_emu->GetSettings()->GetVideoConfig().IntegerFpsMode) {
-		return 2;
-	}
-
 	if(_emu->GetMovieManager()->Playing()) {
 		return 2;
 	}
@@ -291,6 +287,10 @@ int InputHud::GetSettingColor()
 		if(cfg_snes.GsuClockSpeed != 100) {
 			return 2;
 		}
+	}
+
+	if(_emu->GetSettings()->GetVideoConfig().IntegerFpsMode) {
+		return 2;
 	}
 
 	if(_emu->GetSettings()->GetEmulationConfig().RunAheadFrames != 0) {

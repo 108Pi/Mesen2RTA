@@ -23,7 +23,7 @@ namespace Mesen.Config
 		public static string DefaultDocumentsFolder => Path.Combine(BaseDocumentsFolder, "MesenCE");
 
 		private static string BaseDocumentsFolder
-		{
+		{	
 			get
 			{
 				Environment.SpecialFolder folder = OperatingSystem.IsWindows() ? Environment.SpecialFolder.MyDocuments : Environment.SpecialFolder.ApplicationData;
