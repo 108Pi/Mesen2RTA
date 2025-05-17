@@ -193,6 +193,7 @@ void RewindManager::InternalStart(bool forDebugger)
 		return;
 	}
 
+	_emu->SetIsSessionClean(false);
 	_rewindState = forDebugger ? RewindState::Debugging : RewindState::Starting;
 	_videoHistoryBuilder.clear();
 	_videoHistory.clear();

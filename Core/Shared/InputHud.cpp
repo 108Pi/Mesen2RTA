@@ -130,6 +130,9 @@ void InputHud::DrawOutline(int width, int height, int textX, int textY, int star
 	}
 
 	int color = colors[GetSettingColor()];
+	if(color == colors[2]) {
+		_emu->SetIsSessionClean(false);
+	}
 
 	_hud->DrawRectangle(_xOffset + startX, _yOffset + startY, width, height, bgColor, true, 1);
 	_hud->DrawRectangle(_xOffset + startX, _yOffset + startY, width, height, color, false, 1);
@@ -138,6 +141,16 @@ void InputHud::DrawOutline(int width, int height, int textX, int textY, int star
 
 	_outlineWidth = width;
 	_outlineHeight = height;
+
+	if(startX == 0 && startY ==0) {
+		color = _emu->GetIsSessionClean() ? 0x00111171 : 0x00711111;
+		uint32_t ID = _emu->GetSessionID();
+		for(int i = 0; i < height; i++) {
+			if((ID >> i) % 2) {
+				_hud->DrawPixel(_xOffset, _yOffset + i, color, 1);
+			}
+		}
+	}
 }
 
 void InputHud::DrawController(ControllerData& data, BaseControlManager* controlManager)
@@ -290,7 +303,7 @@ int InputHud::GetSettingColor()
 	}
 
 	if(_emu->GetSettings()->GetVideoConfig().IntegerFpsMode) {
-		return 2;
+		return 3;
 	}
 
 	if(_emu->GetSettings()->GetEmulationConfig().RunAheadFrames != 0) {
