@@ -39,6 +39,9 @@ See [COMPILING.md](COMPILING.md)
 ## Contributing
 
 See [CONTRIBUTING.md](CONTRIBUTING.md)
+## Timer Info
+
+The timer can be customized through timer.txt in the Mesen2RTA folder. The file has an example for SMB1 any%. Currently, start or stop conditions can be set when a certain RAM value is equal to a certain value. Additionally, you can choose if the timer should reset on console reset or savestate. The conditions == <= >= != < > can be used.
 
 ## License
 
