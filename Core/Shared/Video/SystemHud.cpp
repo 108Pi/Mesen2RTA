@@ -36,7 +36,9 @@ void SystemHud::Draw(DebugHud* hud, uint32_t width, uint32_t height) const
 			DrawRecordIcon(hud);
 			xOffset += 12;
 		}
-
+		if(_emu->GetRunTimer()->IsValid()) {
+			DrawRunTimer(hud, _emu->GetRunTimer()->GetTime(), _emu->GetFps(), height);
+		}
 		if(!_emu->IsPaused()) {
 			int emuSpeed = settings->GetEmulationSpeed();
 			EmulationConfig cfg = settings->GetEmulationConfig();
@@ -310,5 +312,93 @@ void SystemHud::UpdateHud()
 		if(_currentFPS > 5000) {
 			_currentFPS = 0;
 		}
+	}
+}
+
+void SystemHud::DrawRunTimer(DebugHud* hud, int frameCount, double fps, int height) const
+{
+	double time = frameCount / fps;
+	
+	int startx = 41;
+	hud->DrawRectangle(startx, height - 11, 42, 9, 0x00000000, true, 1);
+	hud->DrawRectangle(startx + 1, height - 10, 40, 7, 0x00A9A9A9, true, 1);
+	int mins = (int)time / 60;
+	double secs = time - mins * 60;
+	secs = floor(secs * 1000.0 + 0.5) / 1000.0;
+
+	DrawNumber(hud, mins % 10, startx + 7, height - 9);
+	DrawNumber(hud, mins / 10 % 10, startx + 2, height - 9);
+	hud->DrawPixel(startx + 12, height - 8, 0x00000000, 1);
+	hud->DrawPixel(startx + 12, height - 6, 0x00000000, 1);
+	DrawNumber(hud, int(secs) % 10, startx + 19, height - 9);
+	DrawNumber(hud, int(secs) / 10 % 10, startx + 14, height - 9);
+	hud->DrawPixel(startx + 24, height - 5, 0x00000000, 1);
+	DrawNumber(hud, int(secs * 10) % 10, startx + 26, height - 9);
+	DrawNumber(hud, int(secs * 100) % 10, startx + 31, height - 9);
+	DrawNumber(hud, int(secs * 1000) % 10, startx + 36, height - 9);
+}
+
+void SystemHud::DrawNumber(DebugHud* _hud, int number, int x, int y) const
+{
+	int numColor = 0x00000000;
+	if(number < 0) {
+		numColor = 0x00BB1111;
+		number *= -1;
+	}
+	int bgColor = 0x00A9A9A9;
+	_hud->DrawRectangle(x, y, 4, 5, numColor, true, 1);
+	switch(number) {
+		case 0:
+			_hud->DrawRectangle(x + 1, y + 1, 2, 3, bgColor, true, 1);
+			break;
+
+		case 1:
+			_hud->DrawRectangle(x, y, 1, 5, bgColor, true, 1);
+			_hud->DrawRectangle(x + 1, y + 1, 1, 3, bgColor, true, 1);
+			_hud->DrawRectangle(x + 3, y, 1, 4, bgColor, true, 1);
+			break;
+
+		case 2:
+			_hud->DrawRectangle(x, y + 1, 3, 1, bgColor, true, 1);
+			_hud->DrawRectangle(x + 1, y + 3, 3, 1, bgColor, true, 1);
+			break;
+
+		case 3:
+			_hud->DrawRectangle(x, y + 1, 3, 1, bgColor, true, 1);
+			_hud->DrawRectangle(x, y + 3, 3, 1, bgColor, true, 1);
+			break;
+
+		case 4:
+			_hud->DrawRectangle(x, y + 3, 3, 2, bgColor, true, 1);
+			_hud->DrawRectangle(x + 1, y, 2, 2, bgColor, true, 1);
+			break;
+
+		case 5:
+			_hud->DrawRectangle(x + 1, y + 1, 3, 1, bgColor, true, 1);
+			_hud->DrawRectangle(x, y + 3, 3, 1, bgColor, true, 1);
+			break;
+
+		case 6:
+			_hud->DrawRectangle(x + 1, y + 1, 3, 1, bgColor, true, 1);
+			_hud->DrawRectangle(x + 1, y + 3, 2, 1, bgColor, true, 1);
+			break;
+
+		case 7:
+			_hud->DrawRectangle(x, y + 2, 1, 3, bgColor, true, 1);
+			_hud->DrawRectangle(x + 1, y + 1, 2, 4, bgColor, true, 1);
+			break;
+
+		case 8:
+			_hud->DrawRectangle(x + 1, y + 3, 2, 1, bgColor, true, 1);
+			_hud->DrawRectangle(x + 1, y + 1, 2, 1, bgColor, true, 1);
+			break;
+
+		case 9:
+			_hud->DrawRectangle(x, y + 3, 3, 2, bgColor, true, 1);
+			_hud->DrawRectangle(x + 1, y + 1, 2, 1, bgColor, true, 1);
+			break;
+
+		default:
+			break;
 	}
 }

@@ -3014,6 +3014,8 @@
     </ClInclude>
     <ClInclude Include="Shared\Movies\BizHawkMovie.h">
       <Filter>Shared\Movies</Filter>
+    <ClInclude Include="RunTimer.h">
+      <Filter>Shared</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -3403,6 +3405,8 @@
     </ClCompile>
     <ClCompile Include="Shared\Movies\BizHawkMovie.cpp">
       <Filter>Shared\Movies</Filter>
+    <ClCompile Include="RunTimer.cpp">
+      <Filter>Shared</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

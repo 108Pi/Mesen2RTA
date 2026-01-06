@@ -40,6 +40,8 @@ private:
 	void ShowRunAhead(DebugHud* hud, uint32_t screenWidth, int lineNumber) const;
 
 	void DrawCounters(DebugHud* hud, uint32_t screenWidth) const;
+	void DrawRunTimer(DebugHud* hud, int frameCount, double fps, int height) const;
+	void DrawNumber(DebugHud* hud, int n, int x, int y) const;
 
 public:
 	SystemHud(Emulator* emu);
