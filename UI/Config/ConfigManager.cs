@@ -195,7 +195,7 @@ namespace Mesen.Config
 						File.WriteAllText(timerPath,
 							 "//Reset can be 1 or true for true and 0 or false for false\n" +
 							 "ResetOnReset = true\n" +
-							 "ResetOnState = true\n" +
+							 "ResetOnState = false\n" +
 							 "\n" +
 							 "//Timer will start/stop when provided ram address is equal to provided value (Can be >, <, >=, !=, etc)\n" +
 							 "//Additionally, multiple conditions can be programmed with an OR operation\n" +
