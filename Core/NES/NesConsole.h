@@ -1,10 +1,10 @@
 #pragma once
 #include "pch.h"
-
 #include "Shared/SettingTypes.h"
 #include "Shared/Interfaces/IConsole.h"
 #include "Debugger/DebugTypes.h"
 #include "Utilities/safe_ptr.h"
+//#include <cstdint>
 
 class Emulator;
 class NesCpu;
@@ -28,6 +28,25 @@ enum class EventType;
 enum class ConsoleRegion;
 enum class GameInputType;
 enum class GameSystem;
+
+enum class CompareOp
+{
+	Equal,
+	NotEqual,
+	Less,
+	Greater,
+	LessEqual,
+	GreaterEqual
+};
+
+extern uint64_t smb1FrameCounter;
+extern uint64_t smb1StartFrame;
+extern uint64_t smb1FinalFrames;
+
+extern bool smb1Running;
+extern bool smb1Finished;
+extern bool smb1FirstEnd;
+
 
 class NesConsole final : public IConsole
 {
@@ -62,6 +81,35 @@ private:
 
 	void StartRecordingHdPack(HdPackBuilderOptions options);
 	void StopRecordingHdPack();
+	bool _timerResetOnReset = true;
+	bool _timerResetOnState = true;
+	void LoadTimerConfig();
+
+	struct RamCondition
+	{
+		uint16_t address;
+		CompareOp op;
+		uint8_t value;
+	};
+
+	struct ConditionGroup
+	{
+		std::vector<RamCondition> conditions;
+	};
+
+	struct TimerRule
+	{
+		std::vector<ConditionGroup> groups;
+		bool empty() const { return groups.empty(); }
+	};
+
+	TimerRule _startRule;
+	TimerRule _stopRule;
+
+	bool EvaluateTimerRule(const TimerRule& rule) const;
+	bool EvaluateGroup(const ConditionGroup& group) const;
+
+
 
 public:
 	NesConsole(Emulator* emulator);
