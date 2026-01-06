@@ -859,15 +859,6 @@ void NesConsole::ProcessNotification(ConsoleNotificationType type, void* paramet
 		smb1FirstEnd = false;
 	}
 
-	if(type == ConsoleNotificationType::StateLoaded && _timerResetOnState) {
-		smb1FrameCounter = 0;
-		smb1StartFrame = 0;
-		smb1FinalFrames = 0;
-		smb1Running = false;
-		smb1Finished = false;
-		smb1FirstEnd = false;
-	}
-
 
 	if(type == ConsoleNotificationType::ExecuteShortcut) {
 		ExecuteShortcutParams* params = (ExecuteShortcutParams*)parameter;
@@ -878,6 +869,16 @@ void NesConsole::ProcessNotification(ConsoleNotificationType type, void* paramet
 				break;
 			case EmulatorShortcut::StopRecordHdPack:
 				StopRecordingHdPack();
+				break;
+			case EmulatorShortcut::LoadState:
+				if(_timerResetOnState) {
+					smb1FrameCounter = 0;
+					smb1StartFrame = 0;
+					smb1FinalFrames = 0;
+					smb1Running = false;
+					smb1Finished = false;
+					smb1FirstEnd = false;
+				}
 				break;
 		}
 	}
