@@ -1,4 +1,12 @@
-﻿using Avalonia.Controls;
+using Avalonia.Controls;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using System.IO;
+using System.Text.RegularExpressions;
+using System.Reflection;
 using Mesen.Interop;
 using Mesen.Utilities;
 using System;
@@ -207,6 +215,30 @@ namespace Mesen.Config
 					}
 
 					Directory.CreateDirectory(_homeFolder);
+					// Create timer.txt if missing
+					string timerPath = Path.Combine(_homeFolder, "timer.txt");
+					if(!File.Exists(timerPath)) {
+						File.WriteAllText(timerPath,
+							 "//Reset can be 1 or true for true and 0 or false for false\n" +
+							 "ResetOnReset = true\n" +
+							 "ResetOnState = true\n" +
+							 "\n" +
+							 "//Timer will start/stop when provided ram address is equal to provided value (Can be >, <, >=, !=, etc)\n" +
+							 "//Additionally, multiple conditions can be programmed with an OR operation\n" +
+							 "\n" +
+							 "start {\n" +
+							 "	ram[0x0787] == 0x17\n" +
+							 "	ram[0x075F] == 0x00\n" +
+							 "	ram[0x075C] == 0x00\n" +
+							 "}\n" +
+							 "\n" +
+							 "stop {\n" +
+							 "	ram[0x075F] == 0x07\n" +
+							 "\tram[0x075C] == 0x03\n" +
+							 "\tram[0x0770] == 0x02\n" +
+							 "}"
+						);
+					}
 				}
 
 				return _homeFolder;
