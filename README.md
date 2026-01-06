@@ -42,6 +42,10 @@ Other builds are also available in the [Actions](https://github.com/SourMesen/Me
 
 See [COMPILING.md](COMPILING.md)
 
+## Timer Info
+
+The timer can be customized through timer.txt in the Mesen2RTA folder. The file has an example for SMB1 any%. Currently, start or stop conditions can be set when a certain RAM value is equal to a certain value. Additionally, you can choose if the timer should reset on console reset or savestate. The conditions == <= >= != < > can be used.
+
 ## License
 
 Mesen is available under the GPL V3 license.  Full text here: <http://www.gnu.org/licenses/gpl-3.0.en.html>
