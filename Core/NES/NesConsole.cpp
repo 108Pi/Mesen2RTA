@@ -1,4 +1,5 @@
 #include "pch.h"
+#include <cmath>
 #include "NES/NesConsole.h"
 #include "NES/NesControlManager.h"
 #include "NES/MapperFactory.h"
@@ -62,14 +63,16 @@ uint64_t smb1FinalFrames = 0;
 bool smb1Running = false;
 bool smb1Finished = false;
 bool smb1FirstEnd = false;
+uint64_t smb1WaitCounter = 0;
+bool smb1Waiting = false;
 
 static std::string FormatSmb1Time(uint64_t frames)
 {
 	double seconds = frames / SMB1_NTSC_FPS;
-	int mins = (int)(seconds / 60.0);
-	int secs = (int)seconds % 60;
-	int millis = (int)(seconds * 1000.0) % 1000;
-
+	int totalMillis = (int)std::round(seconds * 1000.0);
+	int mins = totalMillis / 60000;
+	int secs = (totalMillis % 60000) / 1000;
+	int millis = totalMillis % 1000;
 	char buffer[32];
 	snprintf(buffer, sizeof(buffer), "%02d:%02d.%03d", mins, secs, millis);
 	return buffer;
@@ -173,6 +176,13 @@ void NesConsole::LoadTimerConfig()
 				currentRule->groups.push_back(currentGroup);
 			}
 			currentRule = nullptr;
+			continue;
+		}
+		
+		if(line.rfind("wait", 0) == 0 && currentRule) {
+			try {
+				currentRule->waitFrames = std::stoi(line.substr(4));
+			} catch(...) {}
 			continue;
 		}
 
@@ -471,9 +481,27 @@ void NesConsole::RunFrame()
 		smb1StartFrame = smb1FrameCounter;
 	}
 
-	if(smb1Running && !smb1Finished && EvaluateTimerRule(_stopRule)) {
-		smb1Finished = true;
-		smb1FinalFrames = smb1FrameCounter - smb1StartFrame;
+	if(smb1Running && !smb1Finished) {
+		if(EvaluateTimerRule(_stopRule)) {
+			if(_stopRule.waitFrames > 0) {
+				if(!smb1Waiting) {
+					smb1Waiting = true;
+					smb1WaitCounter = 0;
+				}
+				smb1WaitCounter++;
+				if(smb1WaitCounter >= (uint64_t)_stopRule.waitFrames) {
+					smb1Finished = true;
+					smb1FinalFrames = smb1FrameCounter - smb1StartFrame;
+				}
+			} else {
+				smb1Finished = true;
+				smb1FinalFrames = smb1FrameCounter - smb1StartFrame;
+			}
+		} else {
+			// Conditions no longer met, reset the wait
+			smb1Waiting = false;
+			smb1WaitCounter = 0;
+		}
 	}
 }
 
@@ -857,6 +885,8 @@ void NesConsole::ProcessNotification(ConsoleNotificationType type, void* paramet
 		smb1Running = false;
 		smb1Finished = false;
 		smb1FirstEnd = false;
+		smb1Waiting = false;
+		smb1WaitCounter = 0;
 	}
 
 
@@ -878,6 +908,8 @@ void NesConsole::ProcessNotification(ConsoleNotificationType type, void* paramet
 					smb1Running = false;
 					smb1Finished = false;
 					smb1FirstEnd = false;
+					smb1Waiting = false;
+					smb1WaitCounter = 0;
 				}
 				break;
 		}
