@@ -79,18 +79,16 @@ static void DrawHudSeparator(DebugHud* hud, int type, int x, int y, int xOffset,
 
 void DrawTimerHud(DebugHud* hud, Emulator* emu, int frames, int x, int y, int xOffset, int yOffset)
 {
-
 	const double NTSC_FPS = 60.0988138974405;
 	double seconds = frames / NTSC_FPS;
-
-	int mins = (int)(seconds / 60);
-	int secs = (int)seconds % 60;
-	int millis = (int)((seconds - (int)seconds) * 1000);
-
+	int totalMillis = (int)std::round(seconds * 1000.0);
+	int mins = totalMillis / 60000;
+	int secs = (totalMillis % 60000) / 1000;
+	int millis = totalMillis % 1000;
 	int digits[] = {
-		mins / 10, mins % 10,
-		secs / 10, secs % 10,
-		millis / 100, (millis / 10) % 10, millis % 10
+		 mins / 10, mins % 10,
+		 secs / 10, secs % 10,
+		 millis / 100, (millis / 10) % 10, millis % 10
 	};
 
 	int dx = 0;
