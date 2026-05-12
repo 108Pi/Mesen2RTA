@@ -99,6 +99,7 @@ private:
 	{
 		std::vector<ConditionGroup> groups;
 		bool empty() const { return groups.empty(); }
+		int waitFrames = 0;
 	};
 
 	TimerRule _startRule;
