@@ -198,7 +198,7 @@ namespace Mesen.Config
 							 "ResetOnState = false\n" +
 							 "\n" +
 							 "//Timer will start/stop when provided ram address is equal to provided value (Can be >, <, >=, !=, etc)\n" +
-							 "//Additionally, multiple conditions can be programmed with an OR operation\n" +
+							 "//Additionally, multiple conditions can be programmed with an OR operation. Also the wait command can be used to wait N frames with the selected condiitons before proceeding\n" +
 							 "\n" +
 							 "start {\n" +
 							 "	ram[0x0787] == 0x17\n" +
@@ -210,6 +210,7 @@ namespace Mesen.Config
 							 "	ram[0x075F] == 0x07\n" +
 							 "\tram[0x075C] == 0x03\n" +
 							 "\tram[0x0770] == 0x02\n" +
+							 "\twait 2\n" +
 							 "}"
 						);
 					}
