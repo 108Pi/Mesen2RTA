@@ -410,6 +410,11 @@ uint32_t NesConsole::GetMasterClockRate()
 	return NesConstants::GetClockRate(_region);
 }
 
+uint8_t NesConsole::GetRamValue(uint32_t addr)
+{
+	return _memoryManager->DebugRead(addr);
+}
+
 void NesConsole::SaveBattery()
 {
 	if(_mapper) {

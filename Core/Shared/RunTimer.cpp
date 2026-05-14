@@ -1,10 +1,9 @@
 #include "pch.h"
 #include "Shared/RunTimer.h"
-#include "Shared/BaseControlManager.h"
 
-		RunTimer::RunTimer(BaseControlManager* bcm)
+		RunTimer::RunTimer(safe_ptr<IConsole>* console)
 		{
-				DoSetup(bcm);
+				DoSetup(console);
 		}
 
 		bool RunTimer::Init()
@@ -295,7 +294,7 @@
 				bool passes = true;
 				for(size_t j = 0; j < test.size(); ++j) {
 					const TimerCondition& cond = test[j];
-					uint8_t ramValue = bcm->DebugReadRam(cond.address);
+					uint8_t ramValue = console->get()->GetRamValue(cond.address);
 					if(cond.comparison == '=') {
 						if(ramValue != cond.value) {
 							passes = false;
@@ -338,9 +337,9 @@
 			return false;
 		}
 
-		void RunTimer::DoSetup(BaseControlManager* bcm)
+		void RunTimer::DoSetup(safe_ptr<IConsole>* console)
 		{
-			this->bcm = bcm;
+			this->console = console;
 			startFrame = 0;
 			vpauseTime = 0;
 			pauseDelay = 60;

@@ -248,11 +248,6 @@ uint8_t NesControlManager::ReadRam(uint16_t addr)
 	return value;
 }
 
-uint8_t NesControlManager::DebugReadRam(uint16_t addr)
-{
-	return _console->DebugRead(addr);
-}
-
 void NesControlManager::WriteRam(uint16_t addr, uint8_t value)
 {
 	//The OUT pins are only updated at the start of PUT cycles

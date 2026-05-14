@@ -186,6 +186,11 @@ uint32_t SnesConsole::GetMasterClockRate()
 	return _masterClockRate;
 }
 
+uint8_t SnesConsole::GetRamValue(uint32_t addr)
+{
+	return GetMemoryManager()->Peek(addr);
+}
+
 ConsoleRegion SnesConsole::GetRegion()
 {
 	return _region;

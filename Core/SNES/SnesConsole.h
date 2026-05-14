@@ -88,6 +88,7 @@ public:
 
 	uint64_t GetMasterClock() override;
 	uint32_t GetMasterClockRate() override;
+	uint8_t GetRamValue(uint32_t addr) override;
 	ConsoleRegion GetRegion() override;
 	ConsoleType GetConsoleType() override;
 

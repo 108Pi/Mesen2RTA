@@ -70,6 +70,8 @@ public:
 	virtual uint64_t GetMasterClock() = 0;
 	virtual uint32_t GetMasterClockRate() = 0;
 
+	virtual uint8_t GetRamValue(uint32_t addr) { return 0; }
+
 	virtual double GetFps() = 0;
 
 	virtual TimingInfo GetTimingInfo(CpuType cpuType)
