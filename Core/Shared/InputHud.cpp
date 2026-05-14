@@ -9,8 +9,6 @@
 #include "Shared/Movies/MovieManager.h"
 #include "Shared/CheatManager.h"
 #include "Shared/HistoryViewer.h"
-#include "TimerHud.cpp"
-#include "Nes/NesConsole.h"
 
 static constexpr int colors[4] = { 0x00111111, 0x00117111, 0x00711111 , 0x005F0072 };
 static int bgColor = 0x00A9A9A9;
@@ -260,48 +258,6 @@ void InputHud::DrawControllers(FrameInfo size, vector<ControllerData> controller
 	_controllerIndex = 0;
 	for(ControllerData& portData : controllerData) {
 		DrawController(portData, console->GetControlManager());
-	}
-	if(smb1Running || smb1Finished) {
-
-		int frames = smb1Running
-			? (smb1FrameCounter - smb1StartFrame)
-			: smb1FinalFrames;
-
-		constexpr int digitWidth = 5;
-		constexpr int digitHeight = 5;
-		constexpr int digitCount = 8;
-		constexpr int paddingX = 5;
-		constexpr int paddingY = 2;
-
-		int timerX = _xOffset + 5;
-		int timerY = _yOffset - 11;
-
-		int boxWidth = digitCount * digitWidth + paddingX * 2;
-		int boxHeight = digitHeight + paddingY * 2;
-
-		int boxX = timerX - paddingX;
-		int boxY = timerY - paddingY;
-
-		// Background
-		_hud->DrawRectangle(
-			boxX,
-			boxY,
-			boxWidth,
-			boxHeight,
-			0x00A2A2A2,
-			true,
-			1
-		);
-
-		_hud->DrawRectangle(boxX, boxY, boxWidth, 1, 0x00000000, true, 1);
-		_hud->DrawRectangle(boxX, boxY + boxHeight - 1, boxWidth, 1, 0x00000000, true, 1);
-		_hud->DrawRectangle(boxX, boxY, 1, boxHeight, 0x00000000, true, 1);
-		_hud->DrawRectangle(boxX + boxWidth - 1, boxY, 1, boxHeight, 0x00000000, true, 1);
-		DrawTimerHud(_hud, _emu, smb1FrameCounter - smb1StartFrame, 3, -11, _xOffset, _yOffset);
-
-		if(smb1Finished) {
-			DrawTimerHud(_hud, _emu, smb1FinalFrames, 3, -11, _xOffset, _yOffset);
-		}
 	}
 }
 

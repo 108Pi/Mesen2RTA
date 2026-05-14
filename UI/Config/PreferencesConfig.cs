@@ -58,7 +58,7 @@ namespace Mesen.Config
 		[ObservableProperty] public partial bool AlwaysOnTop { get; set; } = false;
 
 		[ObservableProperty] public partial bool AutoHideMenu { get; set; } = false;
-
+		[ObservableProperty] public partial UInt32 TimerXPos { get; set; } = 41;
 		[ObservableProperty] public partial bool ShowFps { get; set; } = false;
 		[ObservableProperty] public partial bool ShowFrameCounter { get; set; } = false;
 		[ObservableProperty] public partial bool ShowGameTimer { get; set; } = false;
@@ -236,6 +236,7 @@ namespace Mesen.Config
 				ShowFrameCounter = ShowFrameCounter,
 				ShowGameTimer = ShowGameTimer,
 				ShowDebugInfo = ShowDebugInfo,
+				TimerXPos = TimerXPos,
 				ShowLagCounter = ShowLagCounter,
 				DisableOsd = DisableOsd,
 				AllowBackgroundInput = AllowBackgroundInput,
@@ -294,6 +295,7 @@ namespace Mesen.Config
 		[MarshalAs(UnmanagedType.I1)] public bool DisableGameSelectionScreen;
 
 		public HudDisplaySize HudSize;
+		public UInt32 TimerXPos;
 
 		public UInt32 AutoSaveStateDelay;
 		public UInt32 RewindBufferSize;

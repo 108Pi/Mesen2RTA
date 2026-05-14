@@ -242,7 +242,6 @@ uint8_t NesControlManager::ReadDevice(shared_ptr<BaseControlDevice>& device, uin
 uint8_t NesControlManager::ReadRam(uint16_t addr)
 {
 	SetInputReadFlag();
-
 	uint8_t value = _console->GetMemoryManager()->GetOpenBus(GetOpenBusMask(addr - 0x4016));
 	for(shared_ptr<BaseControlDevice>& device : _controlDevices) {
 		if(device->IsConnected()) {
@@ -253,6 +252,11 @@ uint8_t NesControlManager::ReadRam(uint16_t addr)
 	_prevReadAddr = addr;
 
 	return value;
+}
+
+uint8_t NesControlManager::DebugReadRam(uint16_t addr)
+{
+	return _console->DebugRead(addr);
 }
 
 void NesControlManager::WriteRam(uint16_t addr, uint8_t value)

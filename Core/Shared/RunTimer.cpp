@@ -1,10 +1,10 @@
 #include "pch.h"
-#include "RunTimer.h"
+#include "Shared/RunTimer.h"
+#include "Shared/BaseControlManager.h"
 
-		RunTimer::RunTimer(void* memory, uint32_t size)
+		RunTimer::RunTimer(BaseControlManager* bcm)
 		{
-			if (size > 0)
-				DoSetup(memory, size);
+				DoSetup(bcm);
 		}
 
 		bool RunTimer::Init()
@@ -199,9 +199,9 @@
 						return false;
 					}
 					int addr = tokens[i].value;
-					if(addr > ram.Size) {
-						return false;
-					}
+					//if(addr > ram.Size) {
+					//	return false;
+					//}
 					++i;
 					if(tokens[i].type != 3) {
 						return false;
@@ -295,7 +295,7 @@
 				bool passes = true;
 				for(size_t j = 0; j < test.size(); ++j) {
 					const TimerCondition& cond = test[j];
-					uint8_t ramValue = *((uint8_t*)ram.Memory + cond.address);
+					uint8_t ramValue = bcm->DebugReadRam(cond.address);
 					if(cond.comparison == '=') {
 						if(ramValue != cond.value) {
 							passes = false;
@@ -338,13 +338,15 @@
 			return false;
 		}
 
-		void RunTimer::DoSetup(void* memory, uint32_t size)
+		void RunTimer::DoSetup(BaseControlManager* bcm)
 		{
-			ram.Memory = memory;
-			ram.Size = size;
+			this->bcm = bcm;
 			startFrame = 0;
 			vpauseTime = 0;
 			pauseDelay = 60;
+			for(auto* i : allConditions) {
+				i->clear();
+			}
 			isValid = Init();
 			Reset();
 		}

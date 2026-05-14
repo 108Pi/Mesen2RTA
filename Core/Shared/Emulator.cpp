@@ -84,8 +84,12 @@ Emulator::Emulator() :
 	_gameServer(new GameServer(this)),
 	_gameClient(new GameClient(this)),
 	_rewindManager(new RewindManager(this)),
+<<<<<<< HEAD
 	runTimer(nullptr, 0)
 >>>>>>> 5011a786 (Half working timer stuff)
+=======
+	runTimer(nullptr)
+>>>>>>> 4fdbef26 (Functioning timer using logic from nestopiarta)
 {
 	_paused = false;
 	_pauseOnNextFrame = false;
@@ -393,7 +397,7 @@ void Emulator::PowerCycle()
 {
 	ShowResetStatus("Power");
 	ReloadRom(true);
-	runTimer.Reset();
+	runTimer.DoSetup(_console->GetControlManager());
 }
 
 bool Emulator::LoadRom(VirtualFile romFile, VirtualFile patchFile, bool stopRom, bool forPowerCycle)
@@ -566,7 +570,7 @@ bool Emulator::InternalLoadRom(VirtualFile romFile, VirtualFile patchFile, bool 
 	if(!forPowerCycle && !_audioPlayerHud) {
 		ShowResetStatus("Loaded");
 		isMemUnclean = false;
-		runTimer.DoSetup(_consoleMemory[(int)GetCpuTypes()[0]].Memory, _consoleMemory[(int)GetCpuTypes()[0]].Size);
+		runTimer.DoSetup(_console->GetControlManager());
 		
 	}
 
