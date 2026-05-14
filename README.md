@@ -1,8 +1,6 @@
 # Mesen2RTA
 
-Adds indicators when certain features are enabled. 
-
-Adds frame counter to input display for NES and SNES.
+Speedrunning friendly version of Mesen2
 
 # Mesen
 
@@ -43,8 +41,41 @@ Other builds are also available in the [Actions](https://github.com/SourMesen/Me
 See [COMPILING.md](COMPILING.md)
 
 ## Timer Info
+The built in timer can be customized through timer.txt  
+This is done with sets of conditions, and if none of the conditions are false, it sets the timer to the indicated state  
+The included timer.txt has example conditions for Super Mario Bros.   
+Note the emulator must be closed and reopened for changes in timer.txt to take effect
 
-The timer can be customized through timer.txt in the Mesen2RTA folder. The file has an example for SMB1 any%. Currently, start or stop conditions can be set when a certain RAM value is equal to a certain value. Additionally, you can choose if the timer should reset on console reset or savestate. The conditions == <= >= != < > can be used.
+### Condition Types
+start - sets the timer to start running  
+stop - stops the timer from running. It may be started again if a start condition is met  
+reset - resets the timer to the start frame (0 by default) and stops it  
+end - stops the timer from running. It cannot be started again without resetting  
+vpause - visually pauses the timer for some number of frames (60 by default). After, it will continue to run as if it hadn't been stopped  
+
+### Conditions
+Each condition is an address, a comparison operator, and a value  
+Possible comparison operators are = or ==, <, >, <=, >=, and !=  
+
+### Syntax 
+Whitespace isn't needed and is ignored  
+Numbers can be prefaced with 0x to signify hex  
+//This is a comment
+
+The syntax for lists of conditions is
+```
+<type> { <condition>* }
+<condition> => <number> <operator> <number>
+```
+### Timer Settings
+```delay <number>``` can be used to set a negative starting point  
+```advance <number>``` can be used for a positive starting point  
+```pausetime <number>``` changes the number of frames vpause stops the timer for
+
+### Variables 
+Numbers can be assiged to variables with ```let <var name> = <number>```   
+Variables can be used in place of numbers in conditions or settings  
+Variables must be alphanumberic and cannot start with a digit
 
 ## License
 
