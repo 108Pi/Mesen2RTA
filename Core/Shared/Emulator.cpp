@@ -397,7 +397,7 @@ void Emulator::PowerCycle()
 {
 	ShowResetStatus("Power");
 	ReloadRom(true);
-	runTimer.DoSetup(_console->GetControlManager());
+	runTimer.DoSetup(&_console);
 }
 
 bool Emulator::LoadRom(VirtualFile romFile, VirtualFile patchFile, bool stopRom, bool forPowerCycle)
@@ -570,7 +570,7 @@ bool Emulator::InternalLoadRom(VirtualFile romFile, VirtualFile patchFile, bool 
 	if(!forPowerCycle && !_audioPlayerHud) {
 		ShowResetStatus("Loaded");
 		isMemUnclean = false;
-		runTimer.DoSetup(_console->GetControlManager());
+		runTimer.DoSetup(&_console);
 		
 	}
 

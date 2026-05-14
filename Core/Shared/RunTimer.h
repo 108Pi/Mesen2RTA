@@ -8,7 +8,8 @@
 #include <vector>
 #include <cctype>
 #include <map>
-#include "Shared/BaseControlManager.h"
+#include "Utilities/safe_ptr.h"
+#include "Shared/Interfaces/IConsole.h"
 
 		struct TimerCondition
 		{
@@ -26,12 +27,12 @@
 		class RunTimer
 		{
 		public:
-			RunTimer(BaseControlManager* bcm);
+			RunTimer(safe_ptr<IConsole>* console);
 			const double GetTime();
 			const bool IsValid();
 			void UpdateTimer();
 			void Reset();
-			void DoSetup(BaseControlManager* bcm);
+			void DoSetup(safe_ptr<IConsole>* console);
 
 		private:
 			int frameCount = 0;
@@ -40,7 +41,7 @@
 			int vpauseTime = 0;
 			int pauseDelay = 60;
 			bool isValid = false;
-			BaseControlManager* bcm;
+			safe_ptr<IConsole>* console;
 			std::vector<std::vector<TimerCondition>> startConds;
 			std::vector<std::vector<TimerCondition>> stopConds;
 			std::vector<std::vector<TimerCondition>> vpauseConds;
