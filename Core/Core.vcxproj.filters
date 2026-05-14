@@ -2979,6 +2979,7 @@
     <ClInclude Include="RunTimer.h">
       <Filter>Shared</Filter>
     </ClInclude>
+    <ClInclude Include="Shared\RunTimer.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Shared\Video\RotateFilter.cpp">
@@ -3344,6 +3345,7 @@
     <ClCompile Include="RunTimer.cpp">
       <Filter>Shared</Filter>
     </ClCompile>
+    <ClCompile Include="Shared\RunTimer.cpp" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="PCE">

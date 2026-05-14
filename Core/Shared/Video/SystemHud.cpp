@@ -42,7 +42,7 @@ void SystemHud::Draw(DebugHud* hud, uint32_t width, uint32_t height) const
 		if(!_emu->IsPaused()) {
 			int emuSpeed = settings->GetEmulationSpeed();
 			EmulationConfig cfg = settings->GetEmulationConfig();
-			if(settings->CheckFlag(EmulationFlags::Turbo) || emuSpeed > 100 || emuSpeed == 0 || cfg.RunAheadFrames != 0) {
+			if(settings->CheckFlag(EmulationFlags::Turbo) || emuSpeed > 100 || emuSpeed == 0) {
 				DrawTurboRewindIcon(hud, false, xOffset);
 			} else if(settings->CheckFlag(EmulationFlags::Rewind) || emuSpeed < 100) {
 				DrawTurboRewindIcon(hud, true, xOffset);
@@ -326,7 +326,8 @@ void SystemHud::DrawRunTimer(DebugHud* hud, int frameCount, double fps, int heig
 {
 	double time = frameCount / fps;
 	
-	int startx = 41;
+	PreferencesConfig* Prefs = &(_emu->GetSettings()->GetPreferences());
+	int startx = Prefs->TimerXPos;
 	hud->DrawRectangle(startx, height - 11, 42, 9, 0x00000000, true, 1);
 	hud->DrawRectangle(startx + 1, height - 10, 40, 7, 0x00A9A9A9, true, 1);
 	int mins = (int)time / 60;

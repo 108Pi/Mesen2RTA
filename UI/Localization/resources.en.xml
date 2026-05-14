@@ -778,6 +778,7 @@
 			<Control ID="chkShowFps">Show FPS</Control>
 			<Control ID="lblHudDisplaySize">HUD display size:</Control>
 			<Control ID="chkShowDebugInformation">Show debug information</Control>
+			<Control ID="timerXPos">Timer horizontal position</Control>
 
 			<Control ID="lblLastFolderUsed">Last Folder Used</Control>
 

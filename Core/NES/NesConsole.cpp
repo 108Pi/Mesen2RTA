@@ -39,79 +39,14 @@
 #include "Utilities/Serializer.h"
 #include "Utilities/sha1.h"
 #include "Shared/Video/DebugHud.h"
-#include "TimerHud.h"
 #include <fstream>
 #include <string>
 #include <sstream>
 #include <algorithm>
 #include <cctype>
-#include <cctype>
 #include <vector>
 #include <filesystem>
-#include "NES/NesMemoryManager.h"
 #include "Utilities/FolderUtilities.h"
-
-
-// Timer vars and format time stuff
-
-static constexpr double SMB1_NTSC_FPS = 60.0988138974405;
-
-uint64_t smb1FrameCounter = 0;
-uint64_t smb1StartFrame = 0;
-uint64_t smb1FinalFrames = 0;
-
-bool smb1Running = false;
-bool smb1Finished = false;
-bool smb1FirstEnd = false;
-uint64_t smb1WaitCounter = 0;
-bool smb1Waiting = false;
-
-static std::string FormatSmb1Time(uint64_t frames)
-{
-	double seconds = frames / SMB1_NTSC_FPS;
-	int totalMillis = (int)std::round(seconds * 1000.0);
-	int mins = totalMillis / 60000;
-	int secs = (totalMillis % 60000) / 1000;
-	int millis = totalMillis % 1000;
-	char buffer[32];
-	snprintf(buffer, sizeof(buffer), "%02d:%02d.%03d", mins, secs, millis);
-	return buffer;
-}
-
-static bool CompareValue(uint8_t lhs, CompareOp op, uint8_t rhs)
-{
-	switch(op) {
-		case CompareOp::Equal:        return lhs == rhs;
-		case CompareOp::NotEqual:     return lhs != rhs;
-		case CompareOp::Less:         return lhs < rhs;
-		case CompareOp::Greater:      return lhs > rhs;
-		case CompareOp::LessEqual:    return lhs <= rhs;
-		case CompareOp::GreaterEqual: return lhs >= rhs;
-	}
-	return false;
-}
-
-bool NesConsole::EvaluateGroup(const ConditionGroup& group) const
-{
-	for(const RamCondition& c : group.conditions) {
-		uint8_t val = _memoryManager->DebugRead(c.address);
-		if(!CompareValue(val, c.op, c.value)) {
-			return false;
-		}
-	}
-	return true;
-}
-
-bool NesConsole::EvaluateTimerRule(const TimerRule& rule) const
-{
-	for(const ConditionGroup& g : rule.groups) {
-		if(EvaluateGroup(g)) {
-			return true;
-		}
-	}
-	return false;
-}
-
 
 static inline std::string Trim(const std::string& s)
 {
@@ -119,111 +54,11 @@ static inline std::string Trim(const std::string& s)
 	if(start == std::string::npos) return "";
 	size_t end = s.find_last_not_of(" \t\r\n");
 	return s.substr(start, end - start + 1);
-}
-
-
-
-void NesConsole::LoadTimerConfig()
-{
-	_startRule.groups.clear();
-	_stopRule.groups.clear();
-
-	_timerResetOnReset = true;
-	_timerResetOnState = false;
-
-	std::ifstream file("timer.txt");
-	if(!file.is_open()) {
-		return;
-	}
-
-	TimerRule* currentRule = nullptr;
-	ConditionGroup currentGroup;
-
-	std::string line;
-	while(std::getline(file, line)) {
-		line.erase(remove_if(line.begin(), line.end(), isspace), line.end());
-
-		if(line.empty() || line.rfind("//", 0) == 0) {
-			continue;
-		}
-
-		if(line.rfind("ResetOnReset=", 0) == 0) {
-			std::string val = line.substr(13);
-			_timerResetOnReset = (val == "1" || val == "true");
-			continue;
-		}
-
-		if(line.rfind("ResetOnState=", 0) == 0) {
-			std::string val = line.substr(13);
-			_timerResetOnState = (val == "1" || val == "true");
-			continue;
-		}
-
-		if(line == "start{") {
-			currentRule = &_startRule;
-			currentGroup.conditions.clear();
-			continue;
-		}
-
-		if(line == "stop{") {
-			currentRule = &_stopRule;
-			currentGroup.conditions.clear();
-			continue;
-		}
-
-		if(line == "}") {
-			if(currentRule && !currentGroup.conditions.empty()) {
-				currentRule->groups.push_back(currentGroup);
-			}
-			currentRule = nullptr;
-			continue;
-		}
-		
-		if(line.rfind("wait", 0) == 0 && currentRule) {
-			try {
-				currentRule->waitFrames = std::stoi(line.substr(4));
-			} catch(...) {}
-			continue;
-		}
-
-		if(line == "OR") {
-			if(currentRule && !currentGroup.conditions.empty()) {
-				currentRule->groups.push_back(currentGroup);
-				currentGroup.conditions.clear();
-			}
-			continue;
-		}
-
-		if(line.rfind("ram[", 0) == 0 && currentRule) {
-			size_t endAddr = line.find(']');
-			if(endAddr == std::string::npos) continue;
-
-			uint16_t addr = (uint16_t)std::stoul(line.substr(4, endAddr - 4), nullptr, 0);
-			std::string rest = line.substr(endAddr + 1);
-
-			CompareOp op;
-			size_t pos;
-
-			if((pos = rest.find("==")) != std::string::npos) op = CompareOp::Equal;
-			else if((pos = rest.find("!=")) != std::string::npos) op = CompareOp::NotEqual;
-			else if((pos = rest.find("<=")) != std::string::npos) op = CompareOp::LessEqual;
-			else if((pos = rest.find(">=")) != std::string::npos) op = CompareOp::GreaterEqual;
-			else if((pos = rest.find("<")) != std::string::npos) op = CompareOp::Less;
-			else if((pos = rest.find(">")) != std::string::npos) op = CompareOp::Greater;
-			else continue;
-
-			uint8_t value = (uint8_t)std::stoul(rest.substr(pos + (rest[pos + 1] == '=' ? 2 : 1)), nullptr, 0);
-
-			currentGroup.conditions.push_back({ addr, op, value });
-		}
-	}
-}
-
+} 
 
 NesConsole::NesConsole(Emulator* emu)
 {
 	_emu = emu;
-	LoadTimerConfig();
 }
 
 NesConsole::~NesConsole()
@@ -472,36 +307,6 @@ void NesConsole::RunFrame()
 	if(!_nextFrameOverclockDisabled) {
 		//Re-update timings to allow overclocking
 		_ppu->UpdateTimings(_region, true);
-	}
-	// advance global frame counter
-	smb1FrameCounter++;
-
-	if(!smb1Running && EvaluateTimerRule(_startRule)) {
-		smb1Running = true;
-		smb1StartFrame = smb1FrameCounter;
-	}
-
-	if(smb1Running && !smb1Finished) {
-		if(EvaluateTimerRule(_stopRule)) {
-			if(_stopRule.waitFrames > 0) {
-				if(!smb1Waiting) {
-					smb1Waiting = true;
-					smb1WaitCounter = 0;
-				}
-				smb1WaitCounter++;
-				if(smb1WaitCounter >= (uint64_t)_stopRule.waitFrames) {
-					smb1Finished = true;
-					smb1FinalFrames = smb1FrameCounter - smb1StartFrame;
-				}
-			} else {
-				smb1Finished = true;
-				smb1FinalFrames = smb1FrameCounter - smb1StartFrame;
-			}
-		} else {
-			// Conditions no longer met, reset the wait
-			smb1Waiting = false;
-			smb1WaitCounter = 0;
-		}
 	}
 }
 
@@ -878,18 +683,6 @@ DipSwitchInfo NesConsole::GetDipSwitchInfo()
 
 void NesConsole::ProcessNotification(ConsoleNotificationType type, void* parameter)
 {
-	if(type == ConsoleNotificationType::GameReset && _timerResetOnReset) {
-		smb1FrameCounter = 0;
-		smb1StartFrame = 0;
-		smb1FinalFrames = 0;
-		smb1Running = false;
-		smb1Finished = false;
-		smb1FirstEnd = false;
-		smb1Waiting = false;
-		smb1WaitCounter = 0;
-	}
-
-
 	if(type == ConsoleNotificationType::ExecuteShortcut) {
 		ExecuteShortcutParams* params = (ExecuteShortcutParams*)parameter;
 		switch(params->Shortcut) {
@@ -899,18 +692,6 @@ void NesConsole::ProcessNotification(ConsoleNotificationType type, void* paramet
 				break;
 			case EmulatorShortcut::StopRecordHdPack:
 				StopRecordingHdPack();
-				break;
-			case EmulatorShortcut::LoadState:
-				if(_timerResetOnState) {
-					smb1FrameCounter = 0;
-					smb1StartFrame = 0;
-					smb1FinalFrames = 0;
-					smb1Running = false;
-					smb1Finished = false;
-					smb1FirstEnd = false;
-					smb1Waiting = false;
-					smb1WaitCounter = 0;
-				}
 				break;
 		}
 	}

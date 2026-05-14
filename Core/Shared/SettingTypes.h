@@ -877,6 +877,7 @@ struct PreferencesConfig
 
 	HudDisplaySize HudSize = HudDisplaySize::Fixed;
 
+	uint32_t TimerXPos = 41;
 	uint32_t AutoSaveStateDelay = 5;
 	uint32_t RewindBufferSize = 300;
 

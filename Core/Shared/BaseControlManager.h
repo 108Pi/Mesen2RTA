@@ -87,4 +87,5 @@ public:
 		return nullptr;
 	}
 
+	virtual uint8_t DebugReadRam(uint16_t addr) { return 0; }
 };

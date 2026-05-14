@@ -169,6 +169,10 @@
 							<c:ButtonWithIcon Icon="Assets/Refresh.png" Text="{l:Translate btnResetLagCounter}" Click="btnResetLagCounter_OnClick" Margin="10 -5 0 -5" />
 						</StackPanel>
 						<CheckBox Content="{l:Translate chkShowDebugInformation}" IsChecked="{Binding Config.ShowDebugInfo}" />
+						<StackPanel Orientation="Horizontal">
+							<TextBlock Text="{l:Translate timerXPos}" />
+							<c:MesenNumericUpDown Value="{Binding Config.TimerXPos}" Minimum="0" Maximum="65536" />
+						</StackPanel>
 					</c:OptionSection>
 
 					<c:OptionSection Header="{l:Translate lblFontSettings}">

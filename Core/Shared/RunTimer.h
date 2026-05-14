@@ -8,6 +8,7 @@
 #include <vector>
 #include <cctype>
 #include <map>
+#include "Shared/BaseControlManager.h"
 
 		struct TimerCondition
 		{
@@ -22,35 +23,30 @@
 			int value;
 		};
 
-		struct ConsoleMemoryInfo2
-		{
-			void* Memory;
-			uint32_t Size;
-		};
-
 		class RunTimer
 		{
 		public:
-			RunTimer(void* memory, uint32_t size);
+			RunTimer(BaseControlManager* bcm);
 			const double GetTime();
 			const bool IsValid();
 			void UpdateTimer();
 			void Reset();
-			void DoSetup(void* memory, uint32_t size);
+			void DoSetup(BaseControlManager* bcm);
 
 		private:
-			int frameCount;
-			int timerState; //0=stopped 1=running 2=vpause
-			int startFrame;
-			int vpauseTime;
-			int pauseDelay;
-			bool isValid;
-			ConsoleMemoryInfo2 ram;
+			int frameCount = 0;
+			int timerState = -1; //0=stopped 1=running 2=vpause
+			int startFrame = 0;
+			int vpauseTime = 0;
+			int pauseDelay = 60;
+			bool isValid = false;
+			BaseControlManager* bcm;
 			std::vector<std::vector<TimerCondition>> startConds;
 			std::vector<std::vector<TimerCondition>> stopConds;
 			std::vector<std::vector<TimerCondition>> vpauseConds;
 			std::vector<std::vector<TimerCondition>> resetConds;
 			std::vector<std::vector<TimerCondition>> endConds;
+			std::vector <std::vector<std::vector<TimerCondition>>*> allConditions = { &startConds,&stopConds,&vpauseConds,&resetConds,&endConds }; //this is great
 			std::map<int, int> varMap;
 			bool Init();
 			bool CheckConditions(std::vector<std::vector<TimerCondition>>& conds);
