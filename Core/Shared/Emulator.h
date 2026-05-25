@@ -62,6 +62,8 @@ private:
 	friend class DebuggerRequest;
 	friend class EmulatorLock;
 
+	unique_ptr<std::thread> _emuThread;
+	unique_ptr<AudioPlayerHud> _audioPlayerHud;
 	safe_ptr<IConsole> _console;
 
 	//Used by the Process[..] debugger hooks which run exclusively on the emulation thread.
@@ -240,7 +242,7 @@ public:
 	bool IsDebugging() { return !!_debugger; }
 	Debugger* InternalGetDebugger() { return _debugger.get(); }
 
-	thread::id GetEmulationThreadId() { return _emulationThreadId; }
+	std::thread::id GetEmulationThreadId() { return _emulationThreadId; }
 	bool IsEmulationThread();
 
 	int32_t GetStopCode() { return _stopCode; }

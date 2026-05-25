@@ -5,6 +5,7 @@
 #include "Debugger/DebugTypes.h"
 #include "Debugger/DebuggerFeatures.h"
 #include "Shared/SettingTypes.h"
+#include <list>
 
 class IConsole;
 class Emulator;

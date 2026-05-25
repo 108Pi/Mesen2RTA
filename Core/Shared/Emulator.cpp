@@ -185,7 +185,7 @@ void Emulator::Run()
 		}
 	}
 
-	_emulationThreadId = thread::id();
+	_emulationThreadId = std::thread::id();
 
 	if(_runLock.IsLockedByCurrentThread()) {
 		//Lock might not be held by current frame is _stopFlag was set to interrupt the thread
@@ -231,7 +231,7 @@ bool Emulator::ProcessSystemActions()
 
 void Emulator::RunFrameWithRunAhead()
 {
-	stringstream runAheadState;
+	std::stringstream runAheadState;
 	uint32_t frameCount = _settings->GetEmulationConfig().RunAheadFrames;
 
 	//Run a single frame and save the state (no audio/video)
@@ -579,7 +579,7 @@ bool Emulator::InternalLoadRom(VirtualFile romFile, VirtualFile patchFile, bool 
 
 	if(stopRom) {
 		_stopFlag = false;
-		_emuThread.reset(new thread(&Emulator::Run, this));
+		_emuThread.reset(new std::thread(&Emulator::Run, this));
 	}
 
 	return true;
@@ -1180,7 +1180,7 @@ void Emulator::SetStopCode(int32_t stopCode)
 	_stopCode = stopCode;
 	if(!_stopFlag && !_stopRequested) {
 		_stopRequested = true;
-		thread stopEmuTask([this]() {
+		std::thread stopEmuTask([this]() {
 			Stop(true);
 		});
 		stopEmuTask.detach();

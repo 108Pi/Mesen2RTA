@@ -1071,7 +1071,7 @@ void Debugger::Log(string message)
 string Debugger::GetLog()
 {
 	auto lock = _logLock.AcquireSafe();
-	stringstream ss;
+	std::stringstream ss;
 	for(string& msg : _debuggerLog) {
 		ss << msg << "\n";
 	}
