@@ -3014,10 +3014,9 @@
     </ClInclude>
     <ClInclude Include="Shared\Movies\BizHawkMovie.h">
       <Filter>Shared\Movies</Filter>
-    <ClInclude Include="RunTimer.h">
+    <ClInclude Include="Shared\RunTimer.h">
       <Filter>Shared</Filter>
     </ClInclude>
-    <ClInclude Include="Shared\RunTimer.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Shared\Video\RotateFilter.cpp">
@@ -3406,10 +3405,10 @@
     </ClCompile>
     <ClCompile Include="Shared\Movies\BizHawkMovie.cpp">
       <Filter>Shared\Movies</Filter>
-    <ClCompile Include="RunTimer.cpp">
+    </ClCompile>
+    <ClCompile Include="Shared\RunTimer.cpp">
       <Filter>Shared</Filter>
     </ClCompile>
-    <ClCompile Include="Shared\RunTimer.cpp" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="PCE">

@@ -41,7 +41,7 @@
 			int vpauseTime = 0;
 			int pauseDelay = 60;
 			bool isValid = false;
-			safe_ptr<IConsole>* console;
+			safe_ptr<IConsole>* _console;
 			std::vector<std::vector<TimerCondition>> startConds;
 			std::vector<std::vector<TimerCondition>> stopConds;
 			std::vector<std::vector<TimerCondition>> vpauseConds;

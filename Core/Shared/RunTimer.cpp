@@ -113,9 +113,9 @@
 							}
 							Token t = { 4,value };
 							tokens.push_back(t);
-						} catch(const std::invalid_argument& e) {
+						} catch(const std::invalid_argument) {
 							return false;
-						} catch(const std::out_of_range& e) {
+						} catch(const std::out_of_range) {
 							return false;
 						}
 					} else {
@@ -294,7 +294,7 @@
 				bool passes = true;
 				for(size_t j = 0; j < test.size(); ++j) {
 					const TimerCondition& cond = test[j];
-					uint8_t ramValue = console->get()->GetRamValue(cond.address);
+					uint8_t ramValue = _console->get()->GetRamValue(cond.address);
 					if(cond.comparison == '=') {
 						if(ramValue != cond.value) {
 							passes = false;
@@ -339,7 +339,7 @@
 
 		void RunTimer::DoSetup(safe_ptr<IConsole>* console)
 		{
-			this->console = console;
+			this->_console = console;
 			startFrame = 0;
 			vpauseTime = 0;
 			pauseDelay = 60;
