@@ -17,8 +17,8 @@ namespace Mesen.Config
 		[ObservableProperty] public partial bool HidePointerForLightGuns { get; set; } = false;
 		[ObservableProperty][MinMax(0, 10)] public partial UInt32 ForceFeedbackIntensity { get; set; } = 5;
 
-		[ObservableProperty] public partial InputDisplayPosition DisplayInputPosition { get; set; } = InputDisplayPosition.BottomRight;
-		[ObservableProperty] public partial bool DisplayInputPort1 { get; set; } = false;
+		[ObservableProperty] public partial InputDisplayPosition DisplayInputPosition { get; set; } = InputDisplayPosition.BottomLeft;
+		[ObservableProperty] public partial bool DisplayInputPort1 { get; set; } = true;
 		[ObservableProperty] public partial bool DisplayInputPort2 { get; set; } = false;
 		[ObservableProperty] public partial bool DisplayInputPort3 { get; set; } = false;
 		[ObservableProperty] public partial bool DisplayInputPort4 { get; set; } = false;

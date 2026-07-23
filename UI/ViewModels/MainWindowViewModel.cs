@@ -25,7 +25,7 @@ namespace Mesen.ViewModels
 		[ObservableProperty] public partial AudioPlayerViewModel? AudioPlayer { get; private set; }
 		[ObservableProperty] public partial RecentGamesViewModel RecentGames { get; private set; }
 
-		[ObservableProperty] public partial string WindowTitle { get; private set; } = "MesenCE";
+		[ObservableProperty] public partial string WindowTitle { get; private set; } = "Mesen2RTA";
 		[ObservableProperty] public partial Size RendererSize { get; set; }
 
 		[ObservableProperty] public partial bool IsMenuVisible { get; set; }
@@ -99,7 +99,7 @@ namespace Mesen.ViewModels
 
 		private void UpdateWindowTitle()
 		{
-			string title = "MesenCE";
+			string title = "Mesen2RTA";
 			string romName = RomInfo.GetRomName();
 			if(!string.IsNullOrWhiteSpace(romName)) {
 				title += " - " + romName;

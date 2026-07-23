@@ -66,7 +66,7 @@ namespace Mesen.Config
 		[ObservableProperty] public partial bool ShowTitleBarInfo { get; set; } = false;
 		[ObservableProperty] public partial bool ShowDebugInfo { get; set; } = false;
 		[ObservableProperty] public partial bool DisableOsd { get; set; } = false;
-		[ObservableProperty] public partial HudDisplaySize HudSize { get; set; } = HudDisplaySize.Fixed;
+		[ObservableProperty] public partial HudDisplaySize HudSize { get; set; } = HudDisplaySize.Scaled;
 		[ObservableProperty] public partial GameSelectionMode GameSelectionScreenMode { get; set; } = GameSelectionMode.ResumeState;
 
 		[ObservableProperty] public partial FontAntialiasing FontAntialiasing { get; set; } = FontAntialiasing.SubPixelAntialias;

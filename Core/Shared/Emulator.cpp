@@ -49,7 +49,6 @@
 #include "Shared/MemoryOperationType.h"
 #include "Shared/EventType.h"
 
-<<<<<<< HEAD
 Emulator::Emulator()
 	: _settings(new EmuSettings(this)),
 	  _debugHud(new DebugHud()),
@@ -66,30 +65,9 @@ Emulator::Emulator()
 	  _gameServer(new GameServer(this)),
 	  _gameClient(new GameClient(this)),
 	  _rewindManager(new RewindManager(this)),
-	  _stats(new DebugStats())
-=======
-Emulator::Emulator() :
-	_settings(new EmuSettings(this)),
-	_debugHud(new DebugHud()),
-	_scriptHud(new DebugHud()),
-	_notificationManager(new NotificationManager()),
-	_batteryManager(new BatteryManager()),
-	_soundMixer(new SoundMixer(this)),
-	_videoRenderer(new VideoRenderer(this)),
-	_videoDecoder(new VideoDecoder(this)),
-	_saveStateManager(new SaveStateManager(this)),
-	_cheatManager(new CheatManager(this)),
-	_movieManager(new MovieManager(this)),
-	_historyViewer(new HistoryViewer(this)),
-	_gameServer(new GameServer(this)),
-	_gameClient(new GameClient(this)),
-	_rewindManager(new RewindManager(this)),
-<<<<<<< HEAD
-	runTimer(nullptr, 0)
->>>>>>> 5011a786 (Half working timer stuff)
-=======
-	runTimer(nullptr)
->>>>>>> 4fdbef26 (Functioning timer using logic from nestopiarta)
+	  _stats(new DebugStats()),
+	  runTimer(nullptr)
+
 {
 	_paused = false;
 	_pauseOnNextFrame = false;

@@ -338,7 +338,7 @@ struct InputConfig
 	uint32_t ControllerDeadzoneSize = 2;
 	uint32_t MouseSensitivity = 1;
 
-	InputDisplayPosition DisplayInputPosition = InputDisplayPosition::TopLeft;
+	InputDisplayPosition DisplayInputPosition = InputDisplayPosition::BottomLeft;
 	bool DisplayInputPort[8] = {};
 	bool DisplayInputHorizontally = true;
 
@@ -917,7 +917,7 @@ struct PreferencesConfig
 	bool ShowTurboRewindIcons = false;
 	bool DisableGameSelectionScreen = false;
 
-	HudDisplaySize HudSize = HudDisplaySize::Fixed;
+	HudDisplaySize HudSize = HudDisplaySize::Scaled;
 
 	uint32_t TimerXPos = 41;
 	uint32_t AutoSaveStateDelay = 5;

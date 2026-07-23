@@ -1149,30 +1149,6 @@ namespace Mesen.ViewModels
 		public void CheckForUpdate(Window mainWindow, bool silent)
 		{
 			return; //Don't check for updates
-			Task.Run(async () => {
-				UpdatePromptViewModel? updateInfo = await UpdatePromptViewModel.GetUpdateInformation(silent);
-				if(updateInfo == null) {
-					if(!silent) {
-						Dispatcher.UIThread.Post(() => {
-							MesenMsgBox.Show(null, "UpdateDownloadFailed", MessageBoxButtons.OK, MessageBoxIcon.Info);
-						});
-					}
-					return;
-				}
-
-				if(updateInfo.LatestVersion > updateInfo.InstalledVersion) {
-					Dispatcher.UIThread.Post(async () => {
-						UpdatePromptWindow updatePrompt = new UpdatePromptWindow(updateInfo);
-						if(await updatePrompt.ShowCenteredDialog<bool>(mainWindow) == true) {
-							mainWindow.Close();
-						}
-					});
-				} else if(!silent) {
-					Dispatcher.UIThread.Post(() => {
-						MesenMsgBox.Show(null, "MesenUpToDate", MessageBoxButtons.OK, MessageBoxIcon.Info);
-					});
-				}
-			});
 		}
 
 		private async void InstallHdPack(Window wnd)

@@ -1,12 +1,4 @@
 using Avalonia.Controls;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.IO;
-using System.Text.RegularExpressions;
-using System.Reflection;
 using Mesen.Interop;
 using Mesen.Utilities;
 using System;
@@ -28,7 +20,7 @@ namespace Mesen.Config
 		private static object _initLock = new object();
 
 		public static string DefaultPortableFolder { get { return Path.GetDirectoryName(Program.ExePath) ?? "./"; } }
-		public static string DefaultDocumentsFolder => Path.Combine(BaseDocumentsFolder, "MesenCE");
+		public static string DefaultDocumentsFolder => Path.Combine(BaseDocumentsFolder, "Mesen2RTA");
 
 		private static string BaseDocumentsFolder
 		{	
@@ -219,25 +211,24 @@ namespace Mesen.Config
 					string timerPath = Path.Combine(_homeFolder, "timer.txt");
 					if(!File.Exists(timerPath)) {
 						File.WriteAllText(timerPath,
-							 "//Reset can be 1 or true for true and 0 or false for false\n" +
-							 "ResetOnReset = true\n" +
-							 "ResetOnState = false\n" +
+							 "//Timers for Super Mario Bros.\n" +
+							 "//Uncomment the line with the conditions for the category you're playing (remove the slashes)\n" +
 							 "\n" +
-							 "//Timer will start/stop when provided ram address is equal to provided value (Can be >, <, >=, !=, etc)\n" +
-							 "//Additionally, multiple conditions can be programmed with an OR operation. Also the wait command can be used to wait N frames with the selected condiitons before proceeding\n" +
+							 "//any%, warpless, mwe (any delay):\n" +
+							 "//delay 1 start{0xE=7 0x770=1 0x9>100} end{0x770=2 0x75F>=7}\n" +
 							 "\n" +
-							 "start {\n" +
-							 "	ram[0x0787] == 0x17\n" +
-							 "	ram[0x075F] == 0x00\n" +
-							 "	ram[0x075C] == 0x00\n" +
-							 "}\n" +
+							 "//any%, warpless, wme (specific delay)\n" +
+							 "//For each framerule of delay, add 21 to the delay value. Add 1 frame if fds:\n" +
+							 "//delay 194 start{} end{0x770=2 0x75F>=7}\n" +
 							 "\n" +
-							 "stop {\n" +
-							 "	ram[0x075F] == 0x07\n" +
-							 "\tram[0x075C] == 0x03\n" +
-							 "\tram[0x0770] == 0x02\n" +
-							 "\twait 2\n" +
-							 "}"
+							 "//8-4 IL:\n" +
+							 "//delay 1 start{0xE=7} end{0x770=2} reset{0xE=0 0x752=0}\n" +
+							 "\n" +
+							 "//1-1 afm:\n" +
+							 "//delay 1 start{0xE=7 0x770=1} end{0xE=4} reset{0xE=0 0x752=0}\n" +
+							 "\n" +
+							 "//all-stars any%/warpless:\n" +
+							 "//start{0x75D=1 0x1201=0xF 0x7EB=0} end{0x770=2 0x75F>=7}"
 						);
 					}
 				}

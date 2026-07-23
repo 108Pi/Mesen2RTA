@@ -905,8 +905,8 @@
 			<Control ID="btnCancel">Cancel</Control>
 		</Form>
 		<Form ID="SetupWizardWindow">
-			<Control ID="wndTitle">MesenCE</Control>
-			<Control ID="lblMesen">MesenCE - Emulator</Control>
+			<Control ID="wndTitle">Mesen2RTA</Control>
+			<Control ID="lblMesen">Mesen2RTA - Emulator</Control>
 			<Control ID="lblConfigWizard">Configuration</Control>
 			<Control ID="lblInitialSetup">Please take a moment to perform Mesen's initial setup.</Control>
 			<Control ID="lblStorageLocation">Data Storage Location</Control>
