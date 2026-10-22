@@ -24,7 +24,6 @@ SDL2INC := $(shell sdl2-config --cflags)
 LINKCHECKUNRESOLVED := -Wl,-z,defs
 
 LINKOPTIONS :=
-LINUXLIBC :=
 UNAME_S := $(shell uname -s)
 
 ifeq ($(UNAME_S),Linux)
