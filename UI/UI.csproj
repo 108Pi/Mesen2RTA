@@ -33,7 +33,7 @@
 		<TreatWarningsAsErrors>true</TreatWarningsAsErrors>
 		<WarningsNotAsErrors>IL2026;IL2070;IL2075;IL2104;IL3050;IL3053</WarningsNotAsErrors>
 	</PropertyGroup>
-	<PropertyGroup Condition="'$(RuntimeIdentifier)'=='osx-x64' Or '$(RuntimeIdentifier)'=='osx-arm64' Or '$(RuntimeIdentifier)'=='linux-x64' Or '$(RuntimeIdentifier)'=='linux-arm64'">
+	<PropertyGroup Condition="'$(RuntimeIdentifier)'=='osx-x64' Or '$(RuntimeIdentifier)'=='osx-arm64' Or '$(RuntimeIdentifier)'=='linux-x64' Or '$(RuntimeIdentifier)'=='linux-arm64' Or '$(RuntimeIdentifier)'=='linux-musl-x64' Or '$(RuntimeIdentifier)'=='linux-musl-arm64'">
 		<SolutionDir>..</SolutionDir>
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(Configuration)'=='Debug'">
@@ -667,7 +667,7 @@
 	<PropertyGroup>
 		<DllExtension>dll</DllExtension>
 	</PropertyGroup>
-	<PropertyGroup Condition="'$(RuntimeIdentifier)'=='linux-x64' Or '$(RuntimeIdentifier)'=='linux-arm64'">
+	<PropertyGroup Condition="'$(RuntimeIdentifier)'=='linux-x64' Or '$(RuntimeIdentifier)'=='linux-arm64' Or '$(RuntimeIdentifier)'=='linux-musl-x64' Or '$(RuntimeIdentifier)'=='linux-musl-arm64'">
 		<DllExtension>so</DllExtension>
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(RuntimeIdentifier)'=='osx-x64' Or '$(RuntimeIdentifier)'=='osx-arm64'">
