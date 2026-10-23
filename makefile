@@ -24,6 +24,7 @@ SDL2INC := $(shell sdl2-config --cflags)
 LINKCHECKUNRESOLVED := -Wl,-z,defs
 
 LINKOPTIONS :=
+MESENOS :=
 UNAME_S := $(shell uname -s)
 
 ifeq ($(UNAME_S),Linux)
@@ -212,7 +213,7 @@ core: InteropDLL/$(OBJFOLDER)/$(SHAREDLIB)
 pgohelper: InteropDLL/$(OBJFOLDER)/$(SHAREDLIB)
 	mkdir -p PGOHelper/$(OBJFOLDER) && cd PGOHelper/$(OBJFOLDER) && $(CXX) $(CXXFLAGS) $(LINKCHECKUNRESOLVED) -o pgohelper ../PGOHelper.cpp ../../bin/pgohelperlib.so -pthread $(SDL2LIB) $(LIBEVDEVLIB) $(X11LIB)
 
-.o: %.c
+%.o: %.c
 	$(CC) $(CFLAGS) -c $< -o $@
 	
 %.o: %.cpp
