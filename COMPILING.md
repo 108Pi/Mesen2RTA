@@ -10,8 +10,9 @@ To build under Linux you need a version of Clang or GCC that supports C++17.
 
 Additionally, SDL2 and the [.NET 10 SDK](https://learn.microsoft.com/en-us/dotnet/core/install/linux) must also be installed.
 
-Once SDL2 and the .NET 10 SDK are installed, run `make` to compile with Clang.  
+Once SDL2 and the .NET 10 SDK are installed, run `make` to compile with Clang.
 To compile with GCC instead, use `USE_GCC=true make`.  
+To compile on a musl-based system, use `MUSL=true make`.
 **Note:** Mesen usually runs faster when built with Clang instead of GCC.
 
 

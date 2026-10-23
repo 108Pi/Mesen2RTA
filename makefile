@@ -28,7 +28,11 @@ MESENOS :=
 UNAME_S := $(shell uname -s)
 
 ifeq ($(UNAME_S),Linux)
-	MESENOS := linux
+	ifeq ($(MUSL), true)
+		MESENOS := linux-musl
+	else
+		MESENOS := linux
+	endif
 	SHAREDLIB := MesenCore.so
 endif
 
@@ -150,7 +154,7 @@ SEVENZIPOBJ := $(SEVENZIPSRC:.c=.o)
 LUASRC := $(shell find Lua -name '*.c')
 LUAOBJ := $(LUASRC:.c=.o)
 
-ifeq ($(MESENOS),linux)
+ifneq ($(filter linux%,$(MESENOS)),)
 	LINUXSRC := $(shell find Linux -name '*.cpp')
 else
 	LINUXSRC :=
@@ -176,19 +180,16 @@ else
 	LIBEVDEVINC := -I../
 endif
 
-ifeq ($(MESENOS),linux)
+ifneq ($(filter linux%,$(MESENOS)),)
 	X11LIB := -lX11
 else
 	X11LIB :=
 endif
 
-FSLIB := -lstdc++fs
-
 ifeq ($(MESENOS),osx)
 	LIBEVDEVOBJ := 
 	LIBEVDEVINC := 
 	LIBEVDEVSRC := 
-	FSLIB := 
 	ifeq ($(USE_AOT),true)
 		PUBLISHFLAGS := -t:BundleApp -p:UseAppHost=true -p:RuntimeIdentifier=$(MESENPLATFORM) -p:PublishSingleFile=false -p:PublishAot=true -p:SelfContained=true
 	else
@@ -210,7 +211,7 @@ ui: InteropDLL/$(OBJFOLDER)/$(SHAREDLIB)
 core: InteropDLL/$(OBJFOLDER)/$(SHAREDLIB)
 
 pgohelper: InteropDLL/$(OBJFOLDER)/$(SHAREDLIB)
-	mkdir -p PGOHelper/$(OBJFOLDER) && cd PGOHelper/$(OBJFOLDER) && $(CXX) $(CXXFLAGS) $(LINKCHECKUNRESOLVED) -o pgohelper ../PGOHelper.cpp ../../bin/pgohelperlib.so -pthread $(FSLIB) $(SDL2LIB) $(LIBEVDEVLIB) $(X11LIB)
+	mkdir -p PGOHelper/$(OBJFOLDER) && cd PGOHelper/$(OBJFOLDER) && $(CXX) $(CXXFLAGS) $(LINKCHECKUNRESOLVED) -o pgohelper ../PGOHelper.cpp ../../bin/pgohelperlib.so -pthread $(SDL2LIB) $(LIBEVDEVLIB) $(X11LIB)
 
 %.o: %.c
 	$(CC) $(CFLAGS) -c $< -o $@
@@ -224,7 +225,7 @@ pgohelper: InteropDLL/$(OBJFOLDER)/$(SHAREDLIB)
 InteropDLL/$(OBJFOLDER)/$(SHAREDLIB): $(SEVENZIPOBJ) $(LUAOBJ) $(UTILOBJ) $(COREOBJ) $(SDLOBJ) $(LIBEVDEVOBJ) $(LINUXOBJ) $(DLLOBJ) $(MACOSOBJ)
 	mkdir -p bin
 	mkdir -p InteropDLL/$(OBJFOLDER)
-	$(CXX) $(CXXFLAGS) $(LINKOPTIONS) $(LINKCHECKUNRESOLVED) -shared -o $(SHAREDLIB) $(DLLOBJ) $(SEVENZIPOBJ) $(LUAOBJ) $(LINUXOBJ) $(MACOSOBJ) $(LIBEVDEVOBJ) $(UTILOBJ) $(SDLOBJ) $(COREOBJ) $(SDL2INC) -pthread $(FSLIB) $(SDL2LIB) $(LIBEVDEVLIB) $(X11LIB)
+	$(CXX) $(CXXFLAGS) $(LINKOPTIONS) $(LINKCHECKUNRESOLVED) -shared -o $(SHAREDLIB) $(DLLOBJ) $(SEVENZIPOBJ) $(LUAOBJ) $(LINUXOBJ) $(MACOSOBJ) $(LIBEVDEVOBJ) $(UTILOBJ) $(SDLOBJ) $(COREOBJ) $(SDL2INC) -pthread $(SDL2LIB) $(LIBEVDEVLIB) $(X11LIB)
 	cp $(SHAREDLIB) bin/pgohelperlib.so
 	mv $(SHAREDLIB) InteropDLL/$(OBJFOLDER)
 
